@@ -196,12 +196,17 @@ bun run dev         # local Worker development
 
 `Check` CI also runs actionlint and PowerShell parsing/PSScriptAnalyzer.
 `scripts/test-install.ps1` is destructive and restricted to disposable hosted Windows
-runners. Its localhost HTTPS source uses temporary trusted certificates, and the
-framework's test-only installer autoclose variable avoids unattended dialogs.
-Neither mechanism changes installation security on users' machines. When WinGet is
-unavailable, bootstrap requests release `1.29.290` explicitly for the current runner
-user. Unversioned repair can infer a nonexistent GitHub release from a provisioned
-Store package; all-users provisioning is unnecessary for these per-user checks.
+runners. Its HTTPS source uses an IPv4 loopback URL and a temporarily trusted
+certificate with the matching IP-address SAN, avoiding localhost IPv6 resolution
+against an IPv4-only listener. Readiness failures retain their underlying exception;
+certificate verification is never skipped. The framework's test-only installer
+autoclose variable avoids unattended dialogs without changing users' security.
+
+When WinGet is unavailable, bootstrap pins the PowerShell module to `1.29.290` and
+requests GitHub release tag `v1.29.290` for the current runner user. The repair module
+passes the supplied tag verbatim when registering a provisioned package: omitting
+`v` causes a GitHub 404. Unversioned repair can also infer a nonexistent release from
+a provisioned Store package. All-users provisioning is unnecessary for these checks.
 
 Protocol reference: [Microsoft WinGet REST 1.4](https://github.com/microsoft/winget-cli-restsource/blob/main/documentation/WinGet-1.4.0.yaml).
 Hosting reference: [Cloudflare workers.dev](https://developers.cloudflare.com/workers/configuration/routing/workers-dev/).

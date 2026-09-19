@@ -24,4 +24,4 @@ Bun.serve({
     return createSource(packages as PackageManifest[]).fetch(request);
   },
 });
-console.log("Smoke source listening at https://localhost:8443");
+console.log("Smoke source listening at https://127.0.0.1:8443");

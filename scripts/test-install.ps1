@@ -47,7 +47,7 @@ if ($command) {
 if (!$winget) {
     Install-Module Microsoft.WinGet.Client -RequiredVersion '1.29.290' -Scope CurrentUser -Force -Repository PSGallery
     Import-Module Microsoft.WinGet.Client -RequiredVersion '1.29.290'
-    Repair-WinGetPackageManager -Version '1.29.290' -Verbose
+    Repair-WinGetPackageManager -Version 'v1.29.290' -Verbose
     $command = Get-Command winget -CommandType Application -ErrorAction SilentlyContinue
     if ($command) { $winget = $command.Source }
     else {
@@ -119,7 +119,7 @@ try {
     $active = Join-Path $smoke 'catalog.json'
     $initial = if ($previous.Count) { Resolve-RepoPath $PreviousCatalog } else { Resolve-RepoPath $CandidateCatalog }
     Copy-Item $initial $active
-    $cert = New-SelfSignedCertificate -DnsName 'localhost' -CertStoreLocation 'Cert:\LocalMachine\My' -KeyAlgorithm RSA -KeyLength 2048 -KeyExportPolicy Exportable -NotAfter (Get-Date).AddDays(1) -Type SSLServerAuthentication
+    $cert = New-SelfSignedCertificate -Subject 'CN=localhost' -TextExtension @('2.5.29.17={text}DNS=localhost&IPAddress=127.0.0.1') -CertStoreLocation 'Cert:\LocalMachine\My' -KeyAlgorithm RSA -KeyLength 2048 -KeyExportPolicy Exportable -NotAfter (Get-Date).AddDays(1) -Type SSLServerAuthentication
     $certPath = Join-Path $smoke 'localhost.pem'
     $keyPath = Join-Path $smoke 'localhost-key.pem'
     [IO.File]::WriteAllText($certPath, $cert.ExportCertificatePem())
@@ -130,18 +130,22 @@ try {
     $serverArguments = @((Join-Path $PSScriptRoot 'serve-source.ts'), $certPath, $keyPath, $active) | ForEach-Object { '"' + $_ + '"' }
     $server = Start-Process $bun -ArgumentList $serverArguments -WorkingDirectory $repo -PassThru -RedirectStandardOutput (Join-Path $smoke 'server.log') -RedirectStandardError (Join-Path $smoke 'server.err')
     $ready = $false
+    $readinessError = 'No response received'
     for ($attempt = 0; $attempt -lt 60; $attempt++) {
         if ($server.HasExited) { throw "Source server exited ($($server.ExitCode)): $(Get-Content (Join-Path $smoke 'server.err') -Raw)" }
         try {
-            $info = Invoke-RestMethod 'https://localhost:8443/information' -TimeoutSec 2
+            $info = Invoke-RestMethod 'https://127.0.0.1:8443/information' -TimeoutSec 2
             if ($info.Data.SourceIdentifier -ne 'CommanderTvis.ThinkRail.Nightly') { throw 'Unexpected source' }
             $ready = $true
             break
-        } catch { Start-Sleep -Seconds 1 }
+        } catch {
+            $readinessError = $_.Exception.ToString()
+            Start-Sleep -Seconds 1
+        }
     }
-    if (!$ready) { throw 'Trusted HTTPS source did not become ready.' }
+    if (!$ready) { throw "Trusted HTTPS source did not become ready: $readinessError" }
     $sourceAttempted = $true
-    Invoke-Native $winget @('source', 'add', '--name', 'thinkrail-ci', '--arg', 'https://localhost:8443', '--type', 'Microsoft.Rest', '--accept-source-agreements', '--disable-interactivity')
+    Invoke-Native $winget @('source', 'add', '--name', 'thinkrail-ci', '--arg', 'https://127.0.0.1:8443', '--type', 'Microsoft.Rest', '--accept-source-agreements', '--disable-interactivity')
     $env:ELECTROBUN_INSTALLER_UI_AUTOCLOSE = '1'
     $installAttempted = $true
     if ($previous.Count) {
