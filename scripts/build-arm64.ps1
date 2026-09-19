@@ -6,7 +6,7 @@ if ((& bun -p 'process.platform + "-" + process.arch') -ne 'win32-arm64') {
 }
 if ($Version -notmatch '^0\.0\.0-nightly\.\d{14}$') { throw 'Invalid nightly version' }
 $PtySource = (Resolve-Path $PtySource).Path
-$ptyRoot = & bun -e 'import { dirname, resolve } from "node:path"; console.log(resolve(dirname(require.resolve("bun-pty", { paths: ["./packages/server"] })), ".."))'
+$ptyRoot = & bun -e 'import { dirname, resolve } from "node:path"; console.log(resolve(dirname(Bun.resolveSync("bun-pty", resolve("packages/server"))), ".."))'
 $ptyPackage = Get-Content (Join-Path $ptyRoot 'package.json') -Raw | ConvertFrom-Json
 if ($ptyPackage.version -ne '0.4.10') { throw 'Review the native PTY build before changing bun-pty versions' }
 $ptyCommit = & git -C $PtySource rev-parse HEAD

@@ -6,6 +6,55 @@ title: Nightly publication and WinGet source
 parent: winget-nightlies
 ---
 
+## Infrastructure
+
+```mermaid
+flowchart LR
+  subgraph GitHub["GitHub"]
+    fork["CommanderTvis/thinkrail<br/>claude-code-integration-plugin-api"]
+    repo["CommanderTvis/winget-thinkrail<br/>catalog.json + nightly.sha"]
+    subgraph CI["GitHub Actions · daily 03:00 UTC / manual"]
+      compare["Compare fork commit with nightly.sha"]
+      x64["Windows x64<br/>CLI + desktop build and smoke"]
+      arm64["Windows ARM64<br/>native PTY + CLI build and smoke"]
+      gates["Windows x64 / ARM64<br/>WinGet install and upgrade gates<br/>candidate source on localhost HTTPS"]
+      publish["Publish verified nightly"]
+    end
+    releases["Versioned prereleases<br/>installers + SHA256SUMS"]
+    feed["desktop-updates release<br/>immutable archives + update manifest"]
+    secrets["Actions Secrets<br/>Cloudflare account ID + scoped API token"]
+  end
+
+  subgraph Cloudflare["Cloudflare Workers Free"]
+    worker["winget-thinkrail<br/>bundled read-only WinGet REST catalog<br/>kotlin-releases-bot.workers.dev"]
+  end
+
+  subgraph Windows["Users' Windows devices"]
+    winget["WinGet"]
+    desktop["ThinkRail desktop · x64"]
+  end
+
+  fork --> compare
+  repo --> compare
+  compare -->|Changed commit| x64
+  compare -->|Changed commit| arm64
+  x64 --> releases
+  arm64 --> releases
+  releases -->|Candidate downloads| gates
+  gates -->|Both architectures pass| publish
+  secrets -.->|Deployment credentials only| publish
+  publish -->|Deploy code + catalog| worker
+  publish -->|Archive before manifest| feed
+  publish -->|Commit adopted catalog + source SHA| repo
+  winget -->|HTTPS metadata requests| worker
+  winget -->|Direct installer downloads| releases
+  desktop -->|In-app update checks and downloads| feed
+```
+
+Cloudflare serves metadata only; binary downloads go directly to GitHub. Native
+Windows gates precede publication to the production source and desktop update feed.
+Deployment credentials stay in CI and are not bound to the Worker.
+
 ## Boundaries
 
 A read-only Cloudflare Worker serves a bundled WinGet REST catalog on `workers.dev`.
@@ -27,6 +76,10 @@ and replaces only the dependency binary in the disposable checkout before compil
 the CLI. A dependency-version mismatch fails closed and requires reviewing the new
 package rather than silently mixing native code versions. Native ARM64 smoke is a
 release gate, not an assumed consequence of successful cross-compilation.
+Dependency resolution is anchored to the absolute server workspace path using Bun's
+resolver: resolving from the repository root can miss isolated workspace dependencies
+or select a cached package rather than the installed one. A workspace-only fixture
+checks the exact build-script expression to prevent that regression.
 
 The source implements Microsoft's REST 1.4 contract, the first supporting portable
 and nested ZIP installers. Desktop metadata preserves Electrobun's setup ZIP and
