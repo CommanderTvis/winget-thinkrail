@@ -139,8 +139,11 @@ jobs:
           bun-version: '1.4.2'
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          pattern: nightly-*
-          merge-multiple: true
+          name: nightly-x64
+          path: artifacts
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: nightly-arm64
           path: artifacts
       - run: bun install --frozen-lockfile
       - run: bun run check
@@ -225,8 +228,11 @@ jobs:
           bun-version: '1.4.2'
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          pattern: nightly-*
-          merge-multiple: true
+          name: nightly-x64
+          path: artifacts
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: nightly-arm64
           path: artifacts
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:

@@ -45,8 +45,8 @@ if ($command) {
     if ($LASTEXITCODE -eq 0) { $winget = $command.Source }
 }
 if (!$winget) {
-    Install-Module Microsoft.WinGet.Client -Scope CurrentUser -Force -Repository PSGallery
-    Import-Module Microsoft.WinGet.Client
+    Install-Module Microsoft.WinGet.Client -RequiredVersion '1.29.290' -Scope CurrentUser -Force -Repository PSGallery
+    Import-Module Microsoft.WinGet.Client -RequiredVersion '1.29.290'
     Repair-WinGetPackageManager -Version '1.29.290' -Verbose
     $command = Get-Command winget -CommandType Application -ErrorAction SilentlyContinue
     if ($command) { $winget = $command.Source }
