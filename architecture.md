@@ -26,7 +26,7 @@ flowchart LR
   end
 
   subgraph Cloudflare["Cloudflare Workers Free"]
-    worker["winget-thinkrail<br/>bundled read-only WinGet REST catalog<br/>kotlin-releases-bot.workers.dev"]
+    worker["winget-thinkrail<br/>bundled read-only WinGet REST catalog<br/>commandertvis.workers.dev"]
   end
 
   subgraph Windows["Users' Windows devices"]
@@ -117,7 +117,7 @@ first hosted nightly remain operator actions unless separately authorized.
 
 ## Deployment
 
-The source endpoint is `https://winget-thinkrail.kotlin-releases-bot.workers.dev`.
+The source endpoint is `https://winget-thinkrail.commandertvis.workers.dev`.
 The Cloudflare Worker is `winget-thinkrail`; its initial catalog is empty until
 hosted Windows qualification succeeds.
 
@@ -198,7 +198,10 @@ bun run dev         # local Worker development
 `scripts/test-install.ps1` is destructive and restricted to disposable hosted Windows
 runners. Its localhost HTTPS source uses temporary trusted certificates, and the
 framework's test-only installer autoclose variable avoids unattended dialogs.
-Neither mechanism changes installation security on users' machines.
+Neither mechanism changes installation security on users' machines. When WinGet is
+unavailable, bootstrap requests release `1.29.290` explicitly for the current runner
+user. Unversioned repair can infer a nonexistent GitHub release from a provisioned
+Store package; all-users provisioning is unnecessary for these per-user checks.
 
 Protocol reference: [Microsoft WinGet REST 1.4](https://github.com/microsoft/winget-cli-restsource/blob/main/documentation/WinGet-1.4.0.yaml).
 Hosting reference: [Cloudflare workers.dev](https://developers.cloudflare.com/workers/configuration/routing/workers-dev/).

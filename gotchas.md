@@ -1,5 +1,7 @@
 # Gotchas
 
+- Confirm the full public hostname before deployment. The workers.dev account subdomain is shared by all Workers; changing only the Worker name does not change that suffix. The approved account subdomain is commandertvis.
+
 - Keep README.md user-facing. Deployment, credentials, CI operations, recovery, and maintainer verification belong in specs, not the README.
 
 - This source distributes the CommanderTvis ThinkRail fork, not upstream JetBrains builds. Keep the fork identity explicit in package metadata, documentation, and build configuration.

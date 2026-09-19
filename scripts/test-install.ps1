@@ -47,7 +47,7 @@ if ($command) {
 if (!$winget) {
     Install-Module Microsoft.WinGet.Client -Scope CurrentUser -Force -Repository PSGallery
     Import-Module Microsoft.WinGet.Client
-    Repair-WinGetPackageManager -AllUsers
+    Repair-WinGetPackageManager -Version '1.29.290' -Verbose
     $command = Get-Command winget -CommandType Application -ErrorAction SilentlyContinue
     if ($command) { $winget = $command.Source }
     else {

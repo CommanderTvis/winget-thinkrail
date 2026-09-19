@@ -14,7 +14,7 @@ The source is online; packages will become available after the first verified ni
 Add the source once from an administrator terminal:
 
 ```powershell
-winget source add --name thinkrail --arg https://winget-thinkrail.kotlin-releases-bot.workers.dev --type Microsoft.Rest
+winget source add --name thinkrail --arg https://winget-thinkrail.commandertvis.workers.dev --type Microsoft.Rest
 ```
 
 Then install either package from a normal terminal:
