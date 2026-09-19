@@ -9,8 +9,6 @@ Install nightly builds of the [CommanderTvis ThinkRail fork](https://github.com/
 
 Use a current version of WinGet (App Installer).
 
-The source is online; packages will become available after the first verified nightly is published.
-
 Add the source once from an administrator terminal:
 
 ```powershell
