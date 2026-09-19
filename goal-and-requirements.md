@@ -19,7 +19,7 @@ publish an ARM64 desktop installer or label an x64 binary as ARM64.
 Mirror `~/homebrew-thinkrail`: daily 03:00 UTC and manual builds, source-commit
 comparison against `nightly.sha`, timestamped nightly versions, reuse of the fork's
 build tooling, GitHub prereleases with checksummed installers, the desktop's own
-`desktop-updates` feed, installation verification before adoption, automated
+`desktop-updates` feed, required qualification before adoption, automated
 metadata commits, and cleanup of unadopted releases. Windows-specific packaging
 and security behavior must be documented rather than copying macOS quarantine steps.
 
@@ -29,11 +29,22 @@ A user can add the HTTPS source, discover both packages, install the native CLI
 on each supported architecture, install the desktop on x64, and upgrade to the next
 nightly. The desktop updater targets this distribution repository, not JetBrains
 or the Homebrew tap. Unchanged source commits do not rebuild. Failed builds and
-installation checks do not advance the published catalog or `nightly.sha`.
+required qualification checks do not advance the published catalog or `nightly.sha`.
+
+CLI WinGet installation and upgrade checks on native x64 and ARM64 runners remain
+hard publication gates. Desktop x64 qualification requires the upstream composite
+build/native installer smoke and WinGet metadata/search/show validation as hard
+gates. Both packages publish when these gates pass.
+
+Automated verification must not attempt desktop WinGet installation or upgrade or
+launch desktop setup through WinGet: unsigned setup triggers SmartScreen requiring user interaction.
+Do not bypass Windows security or simulate clicking “Run anyway”. Manual desktop
+WinGet installation/upgrade verification remains unverified and non-blocking; desktop
+build/native installer smoke and metadata checks do not establish that success.
 
 Local checks cover protocol behavior, manifest generation, and strict typing.
-GitHub Windows runners perform actual installation checks, which cannot be claimed
-as locally verified on macOS.
+GitHub Windows runners perform actual CLI WinGet installation and upgrade checks,
+which cannot be claimed as locally verified on macOS.
 
 ## Operational scope
 

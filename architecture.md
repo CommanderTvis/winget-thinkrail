@@ -17,7 +17,7 @@ flowchart LR
       compare["Compare fork commit with nightly.sha"]
       x64["Windows x64<br/>CLI + desktop build and smoke"]
       arm64["Windows ARM64<br/>native PTY + CLI build and smoke"]
-      gates["Windows x64 / ARM64<br/>WinGet install and upgrade gates<br/>candidate source on localhost HTTPS"]
+      gates["Windows x64 / ARM64<br/>CLI WinGet install and upgrade gates<br/>desktop metadata/search/show only on x64<br/>candidate source on localhost HTTPS"]
       publish["Publish verified nightly"]
     end
     releases["Versioned prereleases<br/>installers + SHA256SUMS"]
@@ -98,8 +98,14 @@ desktop is a separate x64-only package. Empty initial metadata advertises no fak
 builds. Only the latest successfully adopted nightly is indexed; old releases remain
 available on GitHub.
 
-The Windows installation gate uses the candidate catalog before production
-publication. A source build, checksum, manifest, or installation failure must not
+Windows qualification uses the candidate catalog before production publication.
+CLI WinGet installation and upgrade checks on x64 and ARM64 are hard gates, as are
+the x64 desktop upstream composite build/native installer smoke and desktop WinGet
+metadata/search/show validation on x64. Automated WinGet verification must not
+launch desktop setup or attempt desktop installation or upgrade: unsigned setup
+triggers SmartScreen requiring user interaction. Both packages still publish when
+these gates pass; a manual desktop WinGet check remains unverified and non-blocking.
+A source build, checksum, manifest, or required qualification failure must not
 advance the production catalog or source marker. Publication across GitHub and
 Cloudflare is not transactional: once a release may have been adopted, cleanup must
 retain its downloads rather than break installed catalogs. Desktop feed archives
@@ -110,13 +116,16 @@ are uploaded before the corresponding update manifest.
 These fork nightlies are unsigned. Checksums protect download integrity but do not
 provide publisher signing or bypass Windows SmartScreen. Source addition is an
 explicit trust decision. This distribution does not inherit JetBrains' private
-signing pipeline. Runtime source endpoints never mutate data.
+signing pipeline. Automation must not bypass Windows security or simulate clicking
+“Run anyway”. Runtime source endpoints never mutate data.
 
 ## Verification boundary
 
-Protocol and publication helpers have local tests. Actual WinGet installation and
-native CLI smoke checks belong on the corresponding Windows runners. A macOS
-check cannot establish Windows installation success. Live deployment and the
+Protocol and publication helpers have local tests. Actual CLI WinGet installation
+and upgrade and native CLI smoke checks belong on the corresponding Windows runners.
+Desktop qualification covers the x64 upstream composite build/native installer smoke
+and WinGet metadata/search/show validation, not desktop WinGet installation or upgrade.
+A macOS check cannot establish Windows installation success. Live deployment and the
 first hosted nightly remain operator actions unless separately authorized.
 
 ## Deployment
@@ -154,11 +163,14 @@ hosted Windows qualification succeeds.
    metadata to `main`. If branch protection requires pull requests or signed
    commits, arrange an approved automation path rather than bypassing those
    policies. No additional GitHub PAT is used.
-6. Run **Actions → Nightly → Run workflow** on `main`. Both architecture builds
-   and Windows installation jobs must pass before production publication. The
-   initial empty deployment does not qualify Windows builds; the first hosted
+6. Run **Actions → Nightly → Run workflow** on `main`. Both architecture builds,
+   CLI WinGet installation gates, and x64 desktop build/native installer smoke and
+   WinGet metadata/search/show gates must pass before publishing both packages.
+   The initial empty deployment does not qualify Windows builds; the first hosted
    run does, including the native ARM64 terminal dependency. Subsequent runs also
-   install the previous nightly and exercise WinGet upgrades.
+   install the previous CLI nightly and exercise CLI WinGet upgrades on both
+   architectures. Desktop WinGet installation and upgrade remain manual,
+   unverified, and non-blocking.
 
 The [Workers Free quota](https://developers.cloudflare.com/workers/platform/limits/)
 currently allows 100,000 requests per day. Exhaustion makes metadata unavailable;
@@ -172,13 +184,13 @@ comparing against `nightly.sha`, and use
 `0.0.0-nightly.<UTC YYYYMMDDHHmmss>` versions. `nightly.sha` is absent until the first
 successful adoption. Change `scripts/catalog.ts`, not generated catalog entries.
 
-Publication order is immutable prerelease downloads, candidate installation gates,
+Publication order is immutable prerelease downloads, candidate qualification gates,
 Worker deployment, version-qualified desktop archive, desktop update manifest,
 then the generated catalog/source-marker commit and push. The desktop feed lives
 under the `desktop-updates` release. Its manifest changes only after the new archive
 is available.
 
-On build or installation failure, production stays unchanged and cleanup removes
+On build or required qualification failure, production stays unchanged and cleanup removes
 the unadopted prerelease. After a partial publication failure, retain downloads,
 fix the cause, and start a new workflow run. The unchanged source marker makes it
 retry. Do not rerun only failed installation jobs after cleanup has removed their
@@ -203,10 +215,10 @@ bun run dev         # local Worker development
 runners. Its HTTPS source uses an IPv4 loopback URL and a temporarily trusted
 certificate with the matching IP-address SAN, avoiding localhost IPv6 resolution
 against an IPv4-only listener. Readiness failures retain their underlying exception;
-certificate verification is never skipped. The framework's test-only installer
-autoclose variable avoids unattended dialogs without changing users' security.
-Desktop installation has a three-minute deadline and captures process/window details
-and WinGet diagnostics on timeout instead of leaving a hosted runner blocked.
+certificate verification is never skipped. Automated desktop WinGet checks validate
+metadata/search/show only and never launch setup. Desktop native installer smoke
+remains the upstream composite build's hard gate; it does not establish desktop
+WinGet installation or upgrade success.
 
 When WinGet is unavailable, bootstrap pins the PowerShell module to `1.29.280` and
 requests GitHub release tag `v1.29.290` for the current runner user. The repair module

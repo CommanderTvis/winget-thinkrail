@@ -1,5 +1,7 @@
 # Gotchas
 
+- A SmartScreen prompt blocks unattended desktop installation, not necessarily a user's interactive install. Keep desktop WinGet installation manual and non-blocking for publication; retain mandatory CLI installation and desktop build/smoke checks without changing Windows security.
+
 - Confirm the full public hostname before deployment. The workers.dev account subdomain is shared by all Workers; changing only the Worker name does not change that suffix. The approved account subdomain is commandertvis.
 
 - Keep README.md user-facing. Deployment, credentials, CI operations, recovery, and maintainer verification belong in specs, not the README.

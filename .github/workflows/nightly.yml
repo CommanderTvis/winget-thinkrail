@@ -189,7 +189,7 @@ jobs:
         with:
           name: candidate
           path: artifacts
-      - name: Install and upgrade through WinGet
+      - name: Verify metadata and CLI installation through WinGet
         shell: pwsh
         env:
           VERSION: ${{ needs.check.outputs.version }}
@@ -202,7 +202,6 @@ jobs:
           path: |
             .smoke/*.log
             .smoke/*.err
-            .smoke/*.png
           include-hidden-files: true
           if-no-files-found: ignore
 
