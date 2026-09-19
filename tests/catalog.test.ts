@@ -1,8 +1,10 @@
 import { afterEach, expect, test } from "bun:test";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { generateCatalog } from "../scripts/catalog";
 
 const directories: string[] = [];
@@ -60,6 +62,33 @@ test("generates one native dual-architecture CLI and one x64-only desktop", asyn
     NestedInstallerFiles: [{ RelativeFilePath: options.desktopSetupPath }],
   });
   expect(JSON.stringify(catalog)).not.toContain("JetBrains");
+});
+
+test("CLI output matches the catalog and repository formatting", async () => {
+  const options = await fixture();
+  const output = join(options.artifacts, "catalog.json");
+  execFileSync(process.execPath, [
+    fileURLToPath(new URL("../scripts/catalog.ts", import.meta.url)),
+    options.repository,
+    options.version,
+    options.artifacts,
+    output,
+  ]);
+  const text = await readFile(output, "utf8");
+  expect(JSON.parse(text)).toEqual(await generateCatalog(options));
+  const formatted = execFileSync(
+    process.execPath,
+    [
+      "x",
+      "--no-install",
+      "biome",
+      "format",
+      "--stdin-file-path",
+      "catalog.json",
+    ],
+    { input: text, encoding: "utf8" },
+  );
+  expect(text).toBe(formatted);
 });
 
 test("refuses missing artifacts instead of advertising a partial nightly", async () => {

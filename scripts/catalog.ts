@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -117,5 +118,17 @@ if (import.meta.main) {
     artifacts,
     desktopSetupPath: "ThinkRail-Setup-canary.exe",
   });
-  await writeFile(output, `${JSON.stringify(catalog, null, 2)}\n`);
+  const formatted = execFileSync(
+    process.execPath,
+    [
+      "x",
+      "--no-install",
+      "biome",
+      "format",
+      "--stdin-file-path",
+      "catalog.json",
+    ],
+    { input: JSON.stringify(catalog), encoding: "utf8" },
+  );
+  await writeFile(output, formatted);
 }
