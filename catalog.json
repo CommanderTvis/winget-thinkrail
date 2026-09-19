@@ -1,1 +1,87 @@
-[]
+[
+  {
+    "PackageIdentifier": "CommanderTvis.ThinkRail",
+    "Versions": [
+      {
+        "PackageVersion": "0.0.0-nightly.20260919091524",
+        "DefaultLocale": {
+          "PackageLocale": "en-US",
+          "Publisher": "CommanderTvis",
+          "PublisherUrl": "https://github.com/CommanderTvis",
+          "PackageName": "ThinkRail CLI (CommanderTvis nightly)",
+          "PackageUrl": "https://github.com/CommanderTvis/thinkrail",
+          "License": "Apache-2.0",
+          "ShortDescription": "Unsigned nightly build of the CommanderTvis ThinkRail fork",
+          "Moniker": "thinkrail",
+          "Tags": ["thinkrail", "nightly", "ai"]
+        },
+        "Installers": [
+          {
+            "Architecture": "x64",
+            "InstallerType": "portable",
+            "Scope": "user",
+            "Commands": ["thinkrail"],
+            "UpgradeBehavior": "install",
+            "MinimumOSVersion": "10.0.17763.0",
+            "InstallerUrl": "https://github.com/CommanderTvis/winget-thinkrail/releases/download/v0.0.0-nightly.20260919091524/thinkrail-windows-x64.exe",
+            "InstallerSha256": "AE5F2BFD14A312F5E19D2F192832A6BC370C58383F43F2FC9BA1D36D206B47C1"
+          },
+          {
+            "Architecture": "arm64",
+            "InstallerType": "portable",
+            "Scope": "user",
+            "Commands": ["thinkrail"],
+            "UpgradeBehavior": "install",
+            "MinimumOSVersion": "10.0.17763.0",
+            "InstallerUrl": "https://github.com/CommanderTvis/winget-thinkrail/releases/download/v0.0.0-nightly.20260919091524/thinkrail-windows-arm64.exe",
+            "InstallerSha256": "AEF7FF754D2B3920F59EEF1EA4B98C16A81756F758D74135C59F0564D7C310B6"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "PackageIdentifier": "CommanderTvis.ThinkRail.Desktop",
+    "Versions": [
+      {
+        "PackageVersion": "0.0.0-nightly.20260919091524",
+        "DefaultLocale": {
+          "PackageLocale": "en-US",
+          "Publisher": "CommanderTvis",
+          "PublisherUrl": "https://github.com/CommanderTvis",
+          "PackageName": "ThinkRail Desktop (CommanderTvis nightly)",
+          "PackageUrl": "https://github.com/CommanderTvis/thinkrail",
+          "License": "Apache-2.0",
+          "ShortDescription": "Unsigned nightly build of the CommanderTvis ThinkRail fork",
+          "Moniker": "thinkrail-desktop",
+          "Tags": ["thinkrail", "nightly", "ai"]
+        },
+        "Installers": [
+          {
+            "Architecture": "x64",
+            "InstallerType": "zip",
+            "NestedInstallerType": "exe",
+            "NestedInstallerFiles": [
+              { "RelativeFilePath": "ThinkRail-Setup-canary.exe" }
+            ],
+            "Scope": "user",
+            "InstallModes": ["interactive"],
+            "UpgradeBehavior": "install",
+            "MinimumOSVersion": "10.0.22000.0",
+            "ProductCode": "ai.thinkrail.app.canary",
+            "AppsAndFeaturesEntries": [
+              {
+                "DisplayName": "ThinkRail (Canary)",
+                "DisplayVersion": "0.0.0-nightly.20260919091524",
+                "ProductCode": "ai.thinkrail.app.canary",
+                "InstallerType": "exe"
+              }
+            ],
+            "InstallerUrl": "https://github.com/CommanderTvis/winget-thinkrail/releases/download/v0.0.0-nightly.20260919091524/thinkrail-desktop-windows-x64.zip",
+            "InstallerSha256": "630D27EFEB21DE3EAFF85E1F187D70CED9168325392007630CC5B416074C1826"
+          }
+        ]
+      }
+    ]
+  }
+]
