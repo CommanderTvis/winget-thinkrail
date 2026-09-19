@@ -45,8 +45,8 @@ if ($command) {
     if ($LASTEXITCODE -eq 0) { $winget = $command.Source }
 }
 if (!$winget) {
-    Install-Module Microsoft.WinGet.Client -RequiredVersion '1.29.290' -Scope CurrentUser -Force -Repository PSGallery
-    Import-Module Microsoft.WinGet.Client -RequiredVersion '1.29.290'
+    Install-Module Microsoft.WinGet.Client -RequiredVersion '1.29.280' -Scope CurrentUser -Force -Repository PSGallery
+    Import-Module Microsoft.WinGet.Client -RequiredVersion '1.29.280'
     Repair-WinGetPackageManager -Version 'v1.29.290' -Verbose
     $command = Get-Command winget -CommandType Application -ErrorAction SilentlyContinue
     if ($command) { $winget = $command.Source }
@@ -98,9 +98,35 @@ function Test-Package([string]$Action, $Catalog) {
         Invoke-Native $winget @('search', '--id', $id, '--exact', '--source', 'thinkrail-ci', '--accept-source-agreements', '--disable-interactivity')
         Invoke-Native $winget @('show', '--id', $id, '--exact', '--source', 'thinkrail-ci', '--accept-source-agreements', '--disable-interactivity')
         $arguments = @($Action, '--id', $id, '--exact', '--source', 'thinkrail-ci', '--architecture', $Architecture, '--scope', 'user', '--accept-source-agreements', '--accept-package-agreements', '--disable-interactivity')
-        if ($id.EndsWith('.Desktop')) { Stop-Desktop; $arguments += '--interactive' }
+        if ($id.EndsWith('.Desktop')) { Stop-Desktop; $arguments += '--interactive', '--verbose-logs' }
         # Do not pin --version: upgrade must correlate the installed baseline itself.
-        Invoke-Native $winget $arguments
+        if ($id.EndsWith('.Desktop')) {
+            $start = [Diagnostics.ProcessStartInfo]::new($winget)
+            $start.UseShellExecute = $false
+            foreach ($argument in $arguments) { $start.ArgumentList.Add($argument) }
+            $process = [Diagnostics.Process]::Start($start)
+            try {
+                if (!$process.WaitForExit(180000)) {
+                    Get-Process | Where-Object ProcessName -Match 'ThinkRail|winget|smartscreen|launcher' |
+                        Select-Object Id, ProcessName, MainWindowTitle, Path | Format-Table -AutoSize
+                    try {
+                        Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+                        $bounds = [Windows.Forms.SystemInformation]::VirtualScreen
+                        $image = [Drawing.Bitmap]::new($bounds.Width, $bounds.Height)
+                        $graphics = [Drawing.Graphics]::FromImage($image)
+                        try {
+                            $graphics.CopyFromScreen($bounds.Location, [Drawing.Point]::Empty, $bounds.Size)
+                            $image.Save((Join-Path $smoke 'desktop-timeout.png'))
+                        } finally { $graphics.Dispose(); $image.Dispose() }
+                    } catch { Write-Warning "Could not capture installer window: $_" }
+                    $logDir = Join-Path $env:LOCALAPPDATA 'Packages/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe/LocalState/DiagOutputDir'
+                    if (Test-Path $logDir) { Get-ChildItem $logDir -Filter '*.log' | Copy-Item -Destination $smoke }
+                    $process.Kill($true)
+                    throw 'Desktop installation did not exit within three minutes; see process list and WinGet logs.'
+                }
+                if ($process.ExitCode -ne 0) { throw "Desktop installation failed ($($process.ExitCode))" }
+            } finally { $process.Dispose() }
+        } else { Invoke-Native $winget $arguments }
     }
     Test-Installation (Get-CatalogVersion $Catalog 'CommanderTvis.ThinkRail')
 }
@@ -188,7 +214,7 @@ finally {
     $env:ELECTROBUN_INSTALLER_UI_AUTOCLOSE = $oldAutoclose
     Cleanup {
         if (Test-Path $smoke) {
-            Get-ChildItem $smoke -File | Where-Object Extension -NotIn '.log', '.err' | Remove-Item -Force
+            Get-ChildItem $smoke -File | Where-Object Extension -NotIn '.log', '.err', '.png' | Remove-Item -Force
             if (!$failure -and !$cleanupErrors.Count) { Remove-Item $smoke -Recurse -Force }
         }
     }

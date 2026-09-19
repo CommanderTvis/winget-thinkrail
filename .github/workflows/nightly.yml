@@ -202,6 +202,7 @@ jobs:
           path: |
             .smoke/*.log
             .smoke/*.err
+            .smoke/*.png
           include-hidden-files: true
           if-no-files-found: ignore
 

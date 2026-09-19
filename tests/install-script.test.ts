@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-test("WinGet repair uses the GitHub release tag matching the pinned module", async () => {
+test("WinGet module and CLI release use their independent version formats", async () => {
   const script = await Bun.file(
     new URL("../scripts/test-install.ps1", import.meta.url),
   ).text();
@@ -10,8 +10,11 @@ test("WinGet repair uses the GitHub release tag matching the pinned module", asy
   const releaseTag = script.match(
     /Repair-WinGetPackageManager -Version '([^']+)'/,
   )?.[1];
-  expect(moduleVersion).toBeDefined();
-  expect(releaseTag).toBe(`v${moduleVersion}`);
+  expect(moduleVersion).toMatch(/^\d+\.\d+\.\d+$/);
+  expect(releaseTag).toMatch(/^v\d+\.\d+\.\d+$/);
+  expect(script).toContain(
+    `Import-Module Microsoft.WinGet.Client -RequiredVersion '${moduleVersion}'`,
+  );
 });
 
 test("local source URLs and certificate match the server's IPv4 listener", async () => {

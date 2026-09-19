@@ -201,12 +201,16 @@ certificate with the matching IP-address SAN, avoiding localhost IPv6 resolution
 against an IPv4-only listener. Readiness failures retain their underlying exception;
 certificate verification is never skipped. The framework's test-only installer
 autoclose variable avoids unattended dialogs without changing users' security.
+Desktop installation has a three-minute deadline and captures process/window details
+and WinGet diagnostics on timeout instead of leaving a hosted runner blocked.
 
-When WinGet is unavailable, bootstrap pins the PowerShell module to `1.29.290` and
+When WinGet is unavailable, bootstrap pins the PowerShell module to `1.29.280` and
 requests GitHub release tag `v1.29.290` for the current runner user. The repair module
 passes the supplied tag verbatim when registering a provisioned package: omitting
 `v` causes a GitHub 404. Unversioned repair can also infer a nonexistent release from
-a provisioned Store package. All-users provisioning is unnecessary for these checks.
+a provisioned Store package. PowerShell Gallery module versions and WinGet CLI release
+versions are independent; verify that both pins exist in their respective registries.
+All-users provisioning is unnecessary for these checks.
 
 Protocol reference: [Microsoft WinGet REST 1.4](https://github.com/microsoft/winget-cli-restsource/blob/main/documentation/WinGet-1.4.0.yaml).
 Hosting reference: [Cloudflare workers.dev](https://developers.cloudflare.com/workers/configuration/routing/workers-dev/).
