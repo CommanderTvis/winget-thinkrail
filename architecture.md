@@ -51,11 +51,15 @@ flowchart LR
   desktop -->|In-app update checks and downloads| feed
 ```
 
-Cloudflare serves metadata only; binary downloads go directly to GitHub. Native
+Cloudflare serves metadata and the installation page; binary downloads go directly to GitHub. Native
 Windows gates precede publication to the production source and desktop update feed.
 Deployment credentials stay in CI and are not bound to the Worker.
 
 ## Boundaries
+
+The root path serves a responsive HTML installation guide with package availability
+from the bundled catalog. It requires no JavaScript or external assets. GET and
+HEAD are supported; the WinGet REST endpoints retain their JSON responses.
 
 A read-only Cloudflare Worker serves a bundled WinGet REST catalog on `workers.dev`.
 GitHub Releases serve installer bytes. The Worker has no database, runtime GitHub

@@ -1,4 +1,5 @@
 import type { PackageManifest, PackageVersion } from "./catalog";
+import { renderPage } from "./page";
 
 const protocol = "1.4.0";
 const limit = 64 * 1024;
@@ -155,6 +156,21 @@ export function createSource(catalog: PackageManifest[]): {
     async fetch(request) {
       try {
         const url = new URL(request.url);
+        if (url.pathname === "/") {
+          if (request.method !== "GET" && request.method !== "HEAD")
+            return failure("Method not allowed", 405, { Allow: "GET, HEAD" });
+          return new Response(
+            request.method === "HEAD" ? null : renderPage(catalog),
+            {
+              headers: {
+                "Content-Type": "text/html; charset=utf-8",
+                "Content-Security-Policy":
+                  "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
+                "X-Content-Type-Options": "nosniff",
+              },
+            },
+          );
+        }
         const manifestRoute = /^\/packageManifests\/([^/]+)$/.exec(
           url.pathname,
         );
