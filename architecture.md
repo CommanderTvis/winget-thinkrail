@@ -58,8 +58,17 @@ Deployment credentials stay in CI and are not bound to the Worker.
 ## Boundaries
 
 The root path serves a responsive HTML installation guide with package availability
-from the bundled catalog. It requires no JavaScript or external assets. GET and
-HEAD are supported; the WinGet REST endpoints retain their JSON responses.
+from the catalog. Wrangler's custom build generates it as a Workers Static Asset
+before development, bundle verification, and deployment. GET and HEAD requests
+are served directly by the asset router without invoking the Worker. The asset
+headers retain the page's content security policy and MIME sniffing protection.
+It requires no JavaScript or external assets.
+
+The REST endpoints remain dynamic: `/information` validates protocol headers,
+manifest lookup filters version/channel query parameters, and search processes a
+POST body. Unmatched asset requests fall through to the Worker, preserving JSON
+errors and method validation. The local Windows qualification server uses the
+same page renderer and REST implementation.
 
 A read-only Cloudflare Worker serves a bundled WinGet REST catalog on `workers.dev`.
 GitHub Releases serve installer bytes. The Worker has no database, runtime GitHub
@@ -173,9 +182,13 @@ hosted Windows qualification succeeds.
    unverified, and non-blocking.
 
 The [Workers Free quota](https://developers.cloudflare.com/workers/platform/limits/)
-currently allows 100,000 requests per day. Exhaustion makes metadata unavailable;
-there is no paid fallback. Downloads bypass the Worker. GitHub Actions and release
-hosting have separate limits.
+currently allows 100,000 script requests per account per day. Exhaustion makes
+REST metadata unavailable; there is no paid fallback. The installation page uses
+[Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/),
+whose direct requests are free and unlimited and do not consume that quota. It
+remains available independently of script quota exhaustion. Dynamic API traffic
+can still exhaust the quota; this is not DDoS protection for WinGet. Downloads
+bypass the Worker. GitHub Actions and release hosting have separate limits.
 
 ## Operation and recovery
 
