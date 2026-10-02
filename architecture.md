@@ -62,7 +62,9 @@ from the catalog. Wrangler's custom build generates it as a Workers Static Asset
 before development, bundle verification, and deployment. GET and HEAD requests
 are served directly by the asset router without invoking the Worker. The asset
 headers retain the page's content security policy and MIME sniffing protection.
-It requires no JavaScript or external assets.
+It uses a single document column with browser-default typography, colors, and
+spacing. Only long command and code wrapping uses CSS, so the page fits narrow
+screens. It requires no JavaScript or external assets.
 
 The REST endpoints remain dynamic: `/information` validates protocol headers,
 manifest lookup filters version/channel query parameters, and search processes a

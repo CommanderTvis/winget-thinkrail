@@ -1,5 +1,7 @@
 # Gotchas
 
+- Keep the installation page a plain document with browser-default styling. Avoid oversized marketing headings, package cards, decorative labels, and large spacing; retain readable commands on narrow screens.
+
 - A SmartScreen prompt blocks unattended desktop installation, not necessarily a user's interactive install. Keep desktop WinGet installation manual and non-blocking for publication; retain mandatory CLI installation and desktop build/smoke checks without changing Windows security.
 
 - Confirm the full public hostname before deployment. The workers.dev account subdomain is shared by all Workers; changing only the Worker name does not change that suffix. The approved account subdomain is commandertvis.
