@@ -45,7 +45,7 @@ export function renderPage(catalog: PackageManifest[]): string {
     <section aria-labelledby="source-heading">
       <h2 id="source-heading">Add the source once</h2>
       <p>Use a current version of WinGet (App Installer). Run this command in an administrator terminal.</p>
-      <pre tabindex="0" aria-label="Add the WinGet source"><code>winget source add --name thinkrail --arg https://winget-thinkrail.commandertvis.workers.dev --type Microsoft.Rest</code></pre>
+      <pre tabindex="0" aria-label="Add the WinGet source"><code>winget source add --name thinkrail --arg https://winget-thinkrail.vercel.app --type Microsoft.Rest</code></pre>
       <p>Packages become installable once their verified nightly is available above.</p>
     </section>
     <section aria-labelledby="install-heading">

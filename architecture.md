@@ -8,6 +8,28 @@ parent: winget-nightlies
 
 ## Infrastructure
 
+### Vercel migration acceptance criteria
+
+The replacement host is Vercel Hobby with its provided `vercel.app` hostname.
+A thin Node.js Function entry point uses the existing REST handler and bundled
+adopted catalog; the persistent source identifier remains unchanged. GET and HEAD
+at the root serve the generated static installation page with its security headers.
+Other requests retain REST method, body-size, version, and query validation.
+
+Before switching nightly publication, verify the deployed public hostname,
+information, search, both package manifests, invalid requests, and static page.
+Configure the project's WAF rate limiter to return 429 before function execution;
+browser challenges must not gate WinGet. Keep qualification ahead of production
+deployment and do not enable automatic Git production deployments that could
+publish an unqualified catalog. Deployment credentials remain CI-only.
+
+The legacy Cloudflare deployment remains available during migration; it is not
+deleted automatically. Existing installations must remove and re-add their WinGet
+source with the Vercel URL. Nightly publication switches when the workflow changes
+reach main and its Vercel credentials are configured.
+Accepted requests can still exhaust Vercel's free allowance; this migration does
+not promise quota isolation across other Vercel projects.
+
 ```mermaid
 flowchart LR
   subgraph GitHub["GitHub"]
@@ -22,11 +44,11 @@ flowchart LR
     end
     releases["Versioned prereleases<br/>installers + SHA256SUMS"]
     feed["desktop-updates release<br/>immutable archives + update manifest"]
-    secrets["Actions Secrets<br/>Cloudflare account ID + scoped API token"]
+    secrets["Actions Secrets<br/>Vercel organization/project IDs + API token"]
   end
 
-  subgraph Cloudflare["Cloudflare Workers Free"]
-    worker["winget-thinkrail<br/>bundled read-only WinGet REST catalog<br/>commandertvis.workers.dev"]
+  subgraph Vercel["Vercel Hobby · WAF rate limit"]
+    worker["winget-thinkrail<br/>bundled read-only WinGet REST catalog<br/>winget-thinkrail.vercel.app"]
   end
 
   subgraph Windows["Users' Windows devices"]
@@ -51,30 +73,30 @@ flowchart LR
   desktop -->|In-app update checks and downloads| feed
 ```
 
-Cloudflare serves metadata and the installation page; binary downloads go directly to GitHub. Native
+Vercel serves metadata and the installation page; binary downloads go directly to GitHub. Native
 Windows gates precede publication to the production source and desktop update feed.
-Deployment credentials stay in CI and are not bound to the Worker.
+Deployment credentials stay in CI and are not bound to the Function.
 
 ## Boundaries
 
 The root path serves a responsive HTML installation guide with package availability
-from the catalog. Wrangler's custom build generates it as a Workers Static Asset
-before development, bundle verification, and deployment. GET and HEAD requests
-are served directly by the asset router without invoking the Worker. The asset
-headers retain the page's content security policy and MIME sniffing protection.
+from the catalog. The build generates a static asset and bundles the REST handler
+for Node.js. Vercel routes GET and HEAD at the root directly to the asset without
+invoking the Function. Other requests route to the Function. Route headers retain
+the page's content security policy and MIME sniffing protection.
 It uses a single document column with browser-default typography, colors, and
 spacing. Only long command and code wrapping uses CSS, so the page fits narrow
 screens. It requires no JavaScript or external assets.
 
 The REST endpoints remain dynamic: `/information` validates protocol headers,
 manifest lookup filters version/channel query parameters, and search processes a
-POST body. Unmatched asset requests fall through to the Worker, preserving JSON
+POST body. Unmatched requests fall through to the Function, preserving JSON
 errors and method validation. The local Windows qualification server uses the
 same page renderer and REST implementation.
 
-A read-only Cloudflare Worker serves a bundled WinGet REST catalog on `workers.dev`.
-GitHub Releases serve installer bytes. The Worker has no database, runtime GitHub
-API dependency, upload endpoint, or runtime secrets; a catalog change is a Worker
+A read-only Vercel Function serves a bundled WinGet REST catalog on `vercel.app`.
+GitHub Releases serve installer bytes. The Function has no database, runtime GitHub
+API dependency, upload endpoint, or runtime secrets; a catalog change is a Vercel
 deployment. This keeps metadata and code together and avoids eventually consistent
 multi-key publication.
 
@@ -118,7 +140,7 @@ triggers SmartScreen requiring user interaction. Both packages still publish whe
 these gates pass; a manual desktop WinGet check remains unverified and non-blocking.
 A source build, checksum, manifest, or required qualification failure must not
 advance the production catalog or source marker. Publication across GitHub and
-Cloudflare is not transactional: once a release may have been adopted, cleanup must
+Vercel is not transactional: once a release may have been adopted, cleanup must
 retain its downloads rather than break installed catalogs. Desktop feed archives
 are uploaded before the corresponding update manifest.
 
@@ -141,58 +163,71 @@ first hosted nightly remain operator actions unless separately authorized.
 
 ## Deployment
 
-The source endpoint is `https://winget-thinkrail.commandertvis.workers.dev`.
-The Cloudflare Worker is `winget-thinkrail`; its initial catalog is empty until
-hosted Windows qualification succeeds.
+The public source is `https://winget-thinkrail.vercel.app`. The project is
+`winget-thinkrail` in the `commandertvis` Hobby team; no personal domain is needed.
+Production is public so WinGet requires no Vercel authentication. Automatic Git
+integration is not connected: only qualified catalogs may reach production.
 
-1. Publish this repository as a public GitHub repository, normally
-   `CommanderTvis/winget-thinkrail`, with default branch `main`. Public release
-   downloads are required; hosted Windows ARM64 runners must be available to the
-   repository. The code does not create a repository or configure a remote.
-2. Select Cloudflare Workers Free and configure the account's `workers.dev`
-   subdomain. Keep `workers_dev: true` in `wrangler.jsonc`; no personal domain,
-   custom DNS, KV, R2, or database is needed.
-3. With Bun 1.4.2 installed, bootstrap the empty source:
+1. Install dependencies with `bun install --frozen-lockfile`, then run
+   `bun run check` and `bun run build`.
+2. Authenticate with `bunx vercel@62.1.0 login` and link the existing project with
+   `bunx vercel@62.1.0 link --yes --project winget-thinkrail`.
+   Keep `.vercel/` and `.env*` local and ignored. Do not connect automatic Git
+   deployments.
+3. Deploy the adopted catalog with `bun run deploy`. Verify it using
+   `bun scripts/verify-source.ts https://winget-thinkrail.vercel.app`.
+   The Vercel Function imports a Bun-generated Node.js bundle, avoiding runtime
+   TypeScript imports and extensionless module resolution.
+4. Configure GitHub Actions secrets `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, and
+   `VERCEL_TOKEN`. Scope the API token to the owning team and, where supported,
+   this project. Never store the token in source files. Nightly CI passes it
+   explicitly to the CLI, deploys after qualification, then checks the public
+   source before publishing the desktop feed and adopting metadata.
+5. The project's active WAF rule limits all paths to 120 requests per IP per
+   60-second fixed window and returns 429 when exceeded. Automatic DDoS
+   mitigations are active; Attack Mode and browser bot challenges are off so
+   WinGet remains usable. Review changes with `vercel firewall diff` and publish
+   them with `vercel firewall publish`. NAT users share the per-IP allowance.
+6. Run the hosted Nightly workflow after the changed workflow reaches main.
+   Existing native CLI x64/ARM64 qualification and desktop x64 metadata/build
+   gates remain mandatory. Desktop WinGet installation remains manual and
+   unverified.
 
-   ```sh
-   bun install --frozen-lockfile
-   bun run check
-   bun run build
-   bunx wrangler login
-   bun run deploy
-   ```
+[WAF-mitigated traffic](https://vercel.com/docs/vercel-firewall/vercel-waf/usage-and-pricing)
+does not consume CDN requests or fast data transfer. Accepted requests still
+consume [Hobby allowances](https://vercel.com/docs/plans/hobby), and a distributed
+attack can evade per-IP limits. This is mitigation, not guaranteed availability
+or isolation from other projects on the same Vercel team. GitHub downloads do
+not traverse the Function, and this endpoint no longer consumes the Cloudflare
+account's Workers request quota.
 
-   Confirm the resulting HTTPS URL matches the source URL in `README.md` before
-   announcing availability. `GET /information` must advertise
-   REST `1.4.0`. An empty package search is expected until the first nightly.
-   Authentication is for deployment only; WinGet clients need no token.
-4. Create a Cloudflare API token with `Account / Workers Scripts / Edit`, scoped
-   to the target account. Configure GitHub Actions repository secrets
-   `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Zone permissions are not
-   needed. Keep credentials out of source files.
-5. Allow the workflow's `GITHUB_TOKEN` to publish releases and push generated
-   metadata to `main`. If branch protection requires pull requests or signed
-   commits, arrange an approved automation path rather than bypassing those
-   policies. No additional GitHub PAT is used.
-6. Run **Actions → Nightly → Run workflow** on `main`. Both architecture builds,
-   CLI WinGet installation gates, and x64 desktop build/native installer smoke and
-   WinGet metadata/search/show gates must pass before publishing both packages.
-   The initial empty deployment does not qualify Windows builds; the first hosted
-   run does, including the native ARM64 terminal dependency. Subsequent runs also
-   install the previous CLI nightly and exercise CLI WinGet upgrades on both
-   architectures. Desktop WinGet installation and upgrade remain manual,
-   unverified, and non-blocking.
-
-The [Workers Free quota](https://developers.cloudflare.com/workers/platform/limits/)
-currently allows 100,000 script requests per account per day. Exhaustion makes
-REST metadata unavailable; there is no paid fallback. The installation page uses
-[Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/),
-whose direct requests are free and unlimited and do not consume that quota. It
-remains available independently of script quota exhaustion. Dynamic API traffic
-can still exhaust the quota; this is not DDoS protection for WinGet. Downloads
-bypass the Worker. GitHub Actions and release hosting have separate limits.
+The legacy Worker and its `wrangler.jsonc` remain available for migration recovery;
+use `bunx wrangler deploy` explicitly if recovery requires republishing it. Its
+existing URL remains `https://winget-thinkrail.commandertvis.workers.dev`; it does
+not receive new catalogs after nightly publication switches to Vercel.
 
 ## Operation and recovery
+
+### Traffic notifications
+
+The free `Source traffic alert` workflow polls Vercel firewall counters every
+15 minutes, using the existing project ID and token secrets. It fails when the
+last 15 minutes contain at least 1,000 accepted requests or 100 blocked requests,
+or when the last 24 hours contain at least 10,000 accepted requests. This catches
+both bursts and sustained allowance consumption. Missing or invalid metrics and
+failed API queries also fail the monitor rather than reporting a healthy result.
+
+Enable GitHub Actions email notifications with failed runs only at
+`https://github.com/settings/notifications`. Scheduled-run notifications go to
+the user who last modified the cron schedule. The workflow becomes active only
+after it reaches the default branch; verify notification delivery with a manual
+run. It does not create issues or send Slack messages. Alerting can repeat while
+the thresholds remain exceeded.
+
+GitHub schedules and Vercel metrics can be delayed, so this is best-effort polling,
+not a real-time notification guarantee or an automatic shutdown. It does not
+measure CPU or transfer allowance. Vercel's separate built-in usage-anomaly
+alerts require a paid plan; its standard quota notifications are independent.
 
 Nightlies run daily at 03:00 UTC or manually, skip unchanged fork commits by
 comparing against `nightly.sha`, and use
@@ -200,7 +235,7 @@ comparing against `nightly.sha`, and use
 successful adoption. Change `scripts/catalog.ts`, not generated catalog entries.
 
 Publication order is immutable prerelease downloads, candidate qualification gates,
-Worker deployment, version-qualified desktop archive, desktop update manifest,
+Vercel deployment and public-source verification, version-qualified desktop archive, desktop update manifest,
 then the generated catalog/source-marker commit and push. The desktop feed lives
 under the `desktop-updates` release. Its manifest changes only after the new archive
 is available.
@@ -211,7 +246,7 @@ fix the cause, and start a new workflow run. The unchanged source marker makes i
 retry. Do not rerun only failed installation jobs after cleanup has removed their
 candidate downloads.
 
-For Worker-only fixes, deploy from up-to-date `main` containing the adopted catalog,
+For source-only fixes, deploy from up-to-date `main` containing the adopted catalog,
 outside an active nightly run. An old or empty local catalog would remove advertised
 packages. Keep old release downloads even though WinGet indexes only the latest
 adopted nightly.
@@ -221,8 +256,8 @@ adopted nightly.
 ```sh
 bun install --frozen-lockfile
 bun run check       # strict TypeScript, Biome, and unit tests
-bun run build       # Cloudflare bundle dry-run, no deployment
-bun run dev         # local Worker development
+bun run build       # static page + Node.js bundle, no deployment
+bun run dev         # local Vercel development
 ```
 
 `Check` CI also runs actionlint and PowerShell parsing/PSScriptAnalyzer.
@@ -244,4 +279,4 @@ versions are independent; verify that both pins exist in their respective regist
 All-users provisioning is unnecessary for these checks.
 
 Protocol reference: [Microsoft WinGet REST 1.4](https://github.com/microsoft/winget-cli-restsource/blob/main/documentation/WinGet-1.4.0.yaml).
-Hosting reference: [Cloudflare workers.dev](https://developers.cloudflare.com/workers/configuration/routing/workers-dev/).
+Hosting reference: [Vercel Node.js Functions](https://vercel.com/docs/functions/runtimes/node-js).

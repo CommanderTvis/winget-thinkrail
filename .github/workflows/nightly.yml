@@ -244,9 +244,12 @@ jobs:
       - run: bun run check && bun run build
       - name: Deploy the verified catalog
         env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: bun run deploy
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: bun run deploy --token "$VERCEL_TOKEN"
+      - name: Verify the public source before adoption
+        run: bun scripts/verify-source.ts https://winget-thinkrail.vercel.app
       - name: Publish archive before desktop update manifest
         run: |
           set -euo pipefail

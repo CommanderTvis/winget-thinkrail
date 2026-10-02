@@ -9,7 +9,7 @@ title: ThinkRail fork Windows nightlies
 
 Install and upgrade nightly Windows builds of `CommanderTvis/thinkrail`, branch
 `claude-code-integration-plugin-api`, through a dedicated WinGet source hosted on
-Cloudflare Free using its provided hostname, without a personal domain.
+Vercel Hobby using its provided hostname, without a personal domain.
 
 ## Scope
 
@@ -49,6 +49,6 @@ which cannot be claimed as locally verified on macOS.
 ## Operational scope
 
 The distribution is published from the public `CommanderTvis/winget-thinkrail`
-repository. GitHub Releases host binaries; Cloudflare serves only WinGet metadata.
+repository. GitHub Releases host binaries; Vercel serves WinGet metadata and the installation page.
 Fork build adjustments remain confined to disposable CI checkouts, not sibling
 working repositories.

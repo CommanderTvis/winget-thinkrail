@@ -12,8 +12,12 @@ Use a current version of WinGet (App Installer).
 Add the source once from an administrator terminal:
 
 ```powershell
-winget source add --name thinkrail --arg https://winget-thinkrail.commandertvis.workers.dev --type Microsoft.Rest
+winget source add --name thinkrail --arg https://winget-thinkrail.vercel.app --type Microsoft.Rest
 ```
+
+If you previously added the Cloudflare source, remove it with
+`winget source remove --name thinkrail`, then add the source above. Installed
+packages remain installed.
 
 Then install either package from a normal terminal:
 

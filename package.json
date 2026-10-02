@@ -3,13 +3,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "bunx vercel@62.1.0 dev",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "test": "bun test",
     "check": "bun run typecheck && bun run lint && bun test",
-    "build": "wrangler deploy --dry-run --outdir dist",
-    "deploy": "wrangler deploy"
+    "build": "bun run build:vercel",
+    "build:vercel": "bun scripts/assets.ts && bun build src/index.ts --target=node --outdir dist/function",
+    "deploy": "bunx vercel@62.1.0 deploy --prod --yes"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
