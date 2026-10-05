@@ -168,6 +168,11 @@ The public source is `https://winget-thinkrail.vercel.app`. The project is
 Production is public so WinGet requires no Vercel authentication. Automatic Git
 integration is not connected: only qualified catalogs may reach production.
 
+`.vercelignore` allows only the API entry point, source, build scripts, dependency
+files, adopted catalog, and Vercel configuration into deployment uploads. Downloaded
+release artifacts stay on GitHub; uploading them to Vercel exceeds its file-size
+limit. Vercel generates `dist/` during its build rather than uploading local output.
+
 1. Install dependencies with `bun install --frozen-lockfile`, then run
    `bun run check` and `bun run build`.
 2. Authenticate with `bunx vercel@62.1.0 login` and link the existing project with
