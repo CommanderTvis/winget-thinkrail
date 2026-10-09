@@ -69,6 +69,8 @@ jobs:
         with:
           bun-version-file: package.json
       - run: bun install --frozen-lockfile
+      - name: Disable release analytics in the disposable fork checkout
+        run: bun distribution/scripts/disable-analytics.ts
       - name: Point the desktop updater at this fork distribution
         if: matrix.arch == 'x64'
         shell: pwsh

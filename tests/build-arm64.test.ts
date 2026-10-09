@@ -3,6 +3,29 @@ import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+test("ARM64 release identity disables analytics with an empty key", async () => {
+  const script = await Bun.file(
+    new URL("../scripts/build-arm64.ps1", import.meta.url),
+  ).text();
+  const template = script.match(/@"\r?\n([\s\S]*?)\r?\n"@/);
+  if (!template?.[1]) throw new Error("Release identity template missing");
+  const source = template[1]
+    .replaceAll("$Version", "0.0.0-nightly.20261009100000")
+    .replaceAll("$commit", "abcdef0");
+  const root = await mkdtemp(join(tmpdir(), "thinkrail-release-"));
+  try {
+    const path = join(root, "version.mjs");
+    await writeFile(path, source);
+    const identity = await import(path);
+    expect(identity.version).toBe("0.0.0-nightly.20261009100000");
+    expect(identity.channel).toBe("nightly");
+    expect(identity.commit).toBe("abcdef0");
+    expect(identity.posthogProjectKey).toBe("");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("ARM64 preparation resolves a dependency installed only in the server workspace", async () => {
   const root = await mkdtemp(join(tmpdir(), "thinkrail-workspace-"));
   try {

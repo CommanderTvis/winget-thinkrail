@@ -1,5 +1,7 @@
 # Gotchas
 
+- These fork distributions must not collect analytics or attribution. Keep release PostHog keys empty; an upstream build requirement is not authorization to enable data collection or request analytics credentials.
+
 - Keep the installation page a plain document with browser-default styling. Avoid oversized marketing headings, package cards, decorative labels, and large spacing; retain readable commands on narrow screens.
 
 - A SmartScreen prompt blocks unattended desktop installation, not necessarily a user's interactive install. Keep desktop WinGet installation manual and non-blocking for publication; retain mandatory CLI installation and desktop build/smoke checks without changing Windows security.

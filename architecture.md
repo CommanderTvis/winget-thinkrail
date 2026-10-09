@@ -188,6 +188,10 @@ limit. Vercel generates `dist/` during its build rather than uploading local out
    this project. Never store the token in source files. Nightly CI passes it
    explicitly to the CLI, deploys after qualification, then checks the public
    source before publishing the desktop feed and adopting metadata.
+   Windows releases disable analytics: both architectures stamp an empty PostHog
+   key, which makes the fork's analytics initializer return before creating a sink
+   or recording attribution. CI adapts the upstream action in its disposable fork
+   checkout to allow that empty key. No PostHog account or secret is needed.
 5. The project's active WAF rule limits all paths to 120 requests per IP per
    60-second fixed window and returns 429 when exceeded. Automatic DDoS
    mitigations are active; Attack Mode and browser bot challenges are off so

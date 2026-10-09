@@ -20,6 +20,7 @@ $commit = & git rev-parse --short HEAD
 export const version = "$Version";
 export const channel = "nightly";
 export const commit = "$commit";
+export const posthogProjectKey = "";
 "@ | Set-Content packages/shared/src/version.ts -Encoding utf8NoBOM
 & bun run build:web
 & bun apps/cli/scripts/build-binary.ts --target=bun-windows-arm64
