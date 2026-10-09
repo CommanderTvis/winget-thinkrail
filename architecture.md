@@ -8,9 +8,9 @@ parent: winget-nightlies
 
 ## Infrastructure
 
-### Vercel migration acceptance criteria
+### Hosting acceptance criteria
 
-The replacement host is Vercel Hobby with its provided `vercel.app` hostname.
+The host is Vercel Hobby with its provided `vercel.app` hostname.
 A thin Node.js Function entry point uses the existing REST handler and bundled
 adopted catalog; the persistent source identifier remains unchanged. GET and HEAD
 at the root serve the generated static installation page with its security headers.
@@ -23,11 +23,9 @@ browser challenges must not gate WinGet. Keep qualification ahead of production
 deployment and do not enable automatic Git production deployments that could
 publish an unqualified catalog. Deployment credentials remain CI-only.
 
-The legacy Cloudflare deployment remains available during migration; it is not
-deleted automatically. Existing installations must remove and re-add their WinGet
-source with the Vercel URL. Nightly publication switches when the workflow changes
-reach main and its Vercel credentials are configured.
-Accepted requests can still exhaust Vercel's free allowance; this migration does
+Existing installations using a different URL must remove and re-add their WinGet
+source with the Vercel URL.
+Accepted requests can still exhaust Vercel's free allowance; this hosting setup does
 not promise quota isolation across other Vercel projects.
 
 ```mermaid
@@ -48,7 +46,7 @@ flowchart LR
   end
 
   subgraph Vercel["Vercel Hobby · WAF rate limit"]
-    worker["winget-thinkrail<br/>bundled read-only WinGet REST catalog<br/>winget-thinkrail.vercel.app"]
+    source["winget-thinkrail<br/>bundled read-only WinGet REST catalog<br/>winget-thinkrail.vercel.app"]
   end
 
   subgraph Windows["Users' Windows devices"]
@@ -65,10 +63,10 @@ flowchart LR
   releases -->|Candidate downloads| gates
   gates -->|Both architectures pass| publish
   secrets -.->|Deployment credentials only| publish
-  publish -->|Deploy code + catalog| worker
+  publish -->|Deploy code + catalog| source
   publish -->|Archive before manifest| feed
   publish -->|Commit adopted catalog + source SHA| repo
-  winget -->|HTTPS metadata requests| worker
+  winget -->|HTTPS metadata requests| source
   winget -->|Direct installer downloads| releases
   desktop -->|In-app update checks and downloads| feed
 ```
@@ -207,13 +205,7 @@ does not consume CDN requests or fast data transfer. Accepted requests still
 consume [Hobby allowances](https://vercel.com/docs/plans/hobby), and a distributed
 attack can evade per-IP limits. This is mitigation, not guaranteed availability
 or isolation from other projects on the same Vercel team. GitHub downloads do
-not traverse the Function, and this endpoint no longer consumes the Cloudflare
-account's Workers request quota.
-
-The legacy Worker and its `wrangler.jsonc` remain available for migration recovery;
-use `bunx wrangler deploy` explicitly if recovery requires republishing it. Its
-existing URL remains `https://winget-thinkrail.commandertvis.workers.dev`; it does
-not receive new catalogs after nightly publication switches to Vercel.
+not traverse the Function.
 
 ## Operation and recovery
 

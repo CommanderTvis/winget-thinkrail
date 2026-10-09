@@ -1,17 +1,17 @@
 import { expect, test } from "bun:test";
 import type { PackageManifest } from "../src/catalog";
-import worker from "../src/index";
+import source from "../src/index";
 import { createSource } from "../src/source";
 
-test("Worker root serves an installation page while REST stays JSON", async () => {
-  const response = await worker.fetch(new Request("https://source/"));
+test("Source root serves an installation page while REST stays JSON", async () => {
+  const response = await source.fetch(new Request("https://source/"));
   expect(response.status).toBe(200);
   expect(response.headers.get("Content-Type")).toBe("text/html; charset=utf-8");
   const html = await response.text();
   expect(html).toContain('<html lang="en">');
   expect(html).toContain("winget source add --name thinkrail");
   expect(html).toContain("--scope user --interactive");
-  const info = await worker.fetch(new Request("https://source/information"));
+  const info = await source.fetch(new Request("https://source/information"));
   expect(info.headers.get("Content-Type")).toContain("application/json");
   expect((await info.json()).Data.SourceIdentifier).toBe(
     "CommanderTvis.ThinkRail.Nightly",

@@ -15,7 +15,7 @@ Add the source once from an administrator terminal:
 winget source add --name thinkrail --arg https://winget-thinkrail.vercel.app --type Microsoft.Rest
 ```
 
-If you previously added the Cloudflare source, remove it with
+If you previously added this source with a different URL, remove it with
 `winget source remove --name thinkrail`, then add the source above. Installed
 packages remain installed.
 
