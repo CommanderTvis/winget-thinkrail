@@ -3,14 +3,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bunx vercel@62.1.0 dev",
-    "typecheck": "tsc --noEmit",
+    "dev": "bun scripts/publication.ts init && bunx vercel@62.1.0 dev",
+    "typecheck": "bun scripts/publication.ts init && tsc --noEmit",
     "lint": "biome check .",
-    "test": "bun test",
+    "test": "bun scripts/publication.ts init && bun test",
     "check": "bun run typecheck && bun run lint && bun test",
     "build": "bun run build:vercel",
-    "build:vercel": "bun scripts/assets.ts && bun build src/index.ts --target=node --outdir dist/function",
-    "deploy": "bunx vercel@62.1.0 deploy --prod --yes"
+    "build:vercel": "bun scripts/publication.ts init && bun scripts/assets.ts && bun build src/index.ts --target=node --outdir dist/function",
+    "deploy": "bun scripts/publication.ts require-catalog && bunx vercel@62.1.0 deploy --prod --yes",
+    "catalog:adopted": "bun scripts/publication.ts load"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",

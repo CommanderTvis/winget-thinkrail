@@ -16,11 +16,11 @@ Vercel Hobby using its provided hostname, without a personal domain.
 Publish native x64 and ARM64 CLI packages and an x64-only desktop package. Do not
 publish an ARM64 desktop installer or label an x64 binary as ARM64.
 
-Mirror `~/homebrew-thinkrail`: daily 03:00 UTC and manual builds, source-commit
-comparison against `nightly.sha`, timestamped nightly versions, reuse of the fork's
+Run daily 03:00 UTC and manual builds, source-commit comparison against the adopted
+source SHA in GitHub Releases, timestamped nightly versions, reuse of the fork's
 build tooling, GitHub prereleases with checksummed installers, the desktop's own
-`desktop-updates` feed, required qualification before adoption, automated
-metadata commits, and cleanup of unadopted releases. Windows-specific packaging
+`desktop-updates` feed, required qualification before adoption, release-held
+publication state, and cleanup of unadopted releases. Windows-specific packaging
 and security behavior must be documented rather than copying macOS quarantine steps.
 
 ## Done conditions
@@ -29,7 +29,8 @@ A user can add the HTTPS source, discover both packages, install the native CLI
 on each supported architecture, install the desktop on x64, and upgrade to the next
 nightly. The desktop updater targets this distribution repository, not JetBrains
 or the Homebrew tap. Unchanged source commits do not rebuild. Failed builds and
-required qualification checks do not advance the published catalog or `nightly.sha`.
+required qualification checks do not advance the published catalog or adopted
+release pointer.
 
 CLI WinGet installation and upgrade checks on native x64 and ARM64 runners remain
 hard publication gates. Desktop x64 qualification requires the upstream composite
@@ -49,6 +50,8 @@ which cannot be claimed as locally verified on macOS.
 ## Operational scope
 
 The distribution is published from the public `CommanderTvis/winget-thinkrail`
-repository. GitHub Releases host binaries; Vercel serves WinGet metadata and the installation page.
+repository. GitHub Releases host binaries, immutable nightly catalogs and source SHAs,
+and the adopted-release pointer. Nightly publication never commits or pushes to Git.
+Vercel serves WinGet metadata and the installation page.
 Fork build adjustments remain confined to disposable CI checkouts, not sibling
 working repositories.

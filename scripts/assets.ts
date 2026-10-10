@@ -1,14 +1,10 @@
 import { mkdir } from "node:fs/promises";
-import catalog from "../catalog.json";
-import type { PackageManifest } from "../src/catalog";
+import catalog from "../src/bundled-catalog";
 import { renderPage } from "../src/page";
 
 const directory = new URL("../dist/assets/", import.meta.url);
 await mkdir(directory, { recursive: true });
-await Bun.write(
-  new URL("index.html", directory),
-  renderPage(catalog as PackageManifest[]),
-);
+await Bun.write(new URL("index.html", directory), renderPage(catalog));
 await Bun.write(
   new URL("_headers", directory),
   `/*

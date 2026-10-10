@@ -84,7 +84,7 @@ test("CLI output matches the catalog and repository formatting", async () => {
       "biome",
       "format",
       "--stdin-file-path",
-      "catalog.json",
+      "manifest.json",
     ],
     { input: text, encoding: "utf8" },
   );

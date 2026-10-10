@@ -20,6 +20,8 @@ jobs:
   check:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       sha: ${{ steps.compare.outputs.sha }}
       changed: ${{ steps.compare.outputs.changed }}
@@ -28,13 +30,22 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: '1.4.2'
+      - name: Migrate the previously adopted Git snapshot once
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/publication.ts migrate "$GITHUB_REPOSITORY"
       - id: compare
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           sha=$(git ls-remote "https://github.com/$SOURCE_REPO.git" "refs/heads/$SOURCE_BRANCH" | cut -f1)
           [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::Invalid source head'; exit 1; }
-          last=$(cat nightly.sha 2>/dev/null || true)
+          last=$(bun scripts/publication.ts sha "$GITHUB_REPOSITORY")
           {
             echo "sha=$sha"
             echo "changed=$([ "$sha" != "$last" ] && echo true || echo false)"
@@ -153,6 +164,7 @@ jobs:
         run: |
           set -euo pipefail
           bun scripts/catalog.ts "$GITHUB_REPOSITORY" "$VERSION" artifacts artifacts/catalog.json
+          echo "$SOURCE_SHA" > artifacts/source.sha
           (cd artifacts && sha256sum thinkrail-windows-*.exe thinkrail-desktop-windows-x64.zip > SHA256SUMS)
       - id: release
         name: Publish immutable downloads for installation checks
@@ -162,7 +174,7 @@ jobs:
             --title "$VERSION" --notes "Unsigned nightly built from $SOURCE_REPO@$SOURCE_SHA."
           echo 'created=true' >> "$GITHUB_OUTPUT"
           gh release upload "v$VERSION" --repo "$GITHUB_REPOSITORY" \
-            artifacts/thinkrail-windows-*.exe artifacts/thinkrail-desktop-windows-x64.zip artifacts/SHA256SUMS
+            artifacts/thinkrail-windows-*.exe artifacts/thinkrail-desktop-windows-x64.zip artifacts/SHA256SUMS artifacts/catalog.json artifacts/source.sha
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: candidate
@@ -191,6 +203,10 @@ jobs:
         with:
           name: candidate
           path: artifacts
+      - name: Download the adopted catalog for upgrade qualification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/publication.ts load "$env:GITHUB_REPOSITORY"
       - name: Verify metadata and CLI installation through WinGet
         shell: pwsh
         env:
@@ -220,6 +236,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
+          persist-credentials: false
       - name: Refuse publication from an outdated distribution checkout
         run: |
           set -euo pipefail
@@ -262,14 +279,8 @@ jobs:
           gh release upload desktop-updates --repo "$GITHUB_REPOSITORY" \
             "artifacts/canary-win-x64-ThinkRail-canary-$VERSION.tar.zst"
           gh release upload desktop-updates --repo "$GITHUB_REPOSITORY" --clobber artifacts/canary-win-x64-update.json
-      - name: Adopt the source commit
-        run: |
-          set -euo pipefail
-          echo "$SOURCE_SHA" > nightly.sha
-          git add catalog.json nightly.sha
-          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-            commit -m "Nightly $VERSION from $SOURCE_REPO@${SOURCE_SHA:0:7}"
-          git push origin HEAD:main
+      - name: Adopt the verified nightly in Releases
+        run: bun scripts/publication.ts adopt "$GITHUB_REPOSITORY" "$VERSION" "$SOURCE_SHA"
 
   cleanup:
     needs: [check, release, validate, publish]

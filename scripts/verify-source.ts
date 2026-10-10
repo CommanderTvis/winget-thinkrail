@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import catalog from "../catalog.json";
+import catalog from "../src/bundled-catalog";
 
 const [endpoint, ...extra] = Bun.argv.slice(2);
 if (!endpoint || extra.length) throw new Error("Usage: verify-source.ts <url>");

@@ -126,7 +126,7 @@ if (import.meta.main) {
       "biome",
       "format",
       "--stdin-file-path",
-      "catalog.json",
+      "manifest.json",
     ],
     { input: JSON.stringify(catalog), encoding: "utf8" },
   );

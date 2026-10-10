@@ -32,15 +32,16 @@ not promise quota isolation across other Vercel projects.
 flowchart LR
   subgraph GitHub["GitHub"]
     fork["CommanderTvis/thinkrail<br/>claude-code-integration-plugin-api"]
-    repo["CommanderTvis/winget-thinkrail<br/>catalog.json + nightly.sha"]
+    repo["CommanderTvis/winget-thinkrail<br/>code + workflows"]
     subgraph CI["GitHub Actions · daily 03:00 UTC / manual"]
-      compare["Compare fork commit with nightly.sha"]
+      compare["Compare fork commit with adopted source SHA"]
       x64["Windows x64<br/>CLI + desktop build and smoke"]
       arm64["Windows ARM64<br/>native PTY + CLI build and smoke"]
       gates["Windows x64 / ARM64<br/>CLI WinGet install and upgrade gates<br/>desktop metadata/search/show only on x64<br/>candidate source on localhost HTTPS"]
       publish["Publish verified nightly"]
     end
-    releases["Versioned prereleases<br/>installers + SHA256SUMS"]
+    releases["Versioned prereleases<br/>installers + SHA256SUMS + catalog + source SHA"]
+    state["publication-state release<br/>adopted version + source SHA"]
     feed["desktop-updates release<br/>immutable archives + update manifest"]
     secrets["Actions Secrets<br/>Vercel organization/project IDs + API token"]
   end
@@ -56,6 +57,7 @@ flowchart LR
 
   fork --> compare
   repo --> compare
+  state --> compare
   compare -->|Changed commit| x64
   compare -->|Changed commit| arm64
   x64 --> releases
@@ -65,7 +67,7 @@ flowchart LR
   secrets -.->|Deployment credentials only| publish
   publish -->|Deploy code + catalog| source
   publish -->|Archive before manifest| feed
-  publish -->|Commit adopted catalog + source SHA| repo
+  publish -->|Advance adopted release pointer| state
   winget -->|HTTPS metadata requests| source
   winget -->|Direct installer downloads| releases
   desktop -->|In-app update checks and downloads| feed
@@ -98,7 +100,15 @@ API dependency, upload endpoint, or runtime secrets; a catalog change is a Verce
 deployment. This keeps metadata and code together and avoids eventually consistent
 multi-key publication.
 
-GitHub Actions is the only writer of generated package metadata and `nightly.sha`.
+GitHub Actions writes immutable `catalog.json` and `source.sha` assets to each nightly
+release. The `publication-state` release body is a single JSON adoption pointer
+containing `version` and `sourceSha`; it advances only after public-source verification
+and desktop feed publication. Nightly publication never commits or pushes to a branch.
+An ignored local `catalog.json` is the build input; it is bundled into Vercel.
+Local checks initialize a missing catalog to an empty bootstrap; deployment refuses
+an empty catalog. API errors and corrupt adoption state stop publication; outside
+the one-time migration, absent state also stops comparisons and catalog downloads.
+Upgrade qualification downloads the previous adopted catalog from its exact release.
 All targets build the same resolved fork commit and timestamped release identity.
 The x64 job invokes the fork's composite build action. The ARM64 job invokes its
 existing CLI version-stamping, web-build, compile, and smoke commands without
@@ -177,7 +187,8 @@ limit. Vercel generates `dist/` during its build rather than uploading local out
    `bunx vercel@62.1.0 link --yes --project winget-thinkrail`.
    Keep `.vercel/` and `.env*` local and ignored. Do not connect automatic Git
    deployments.
-3. Deploy the adopted catalog with `bun run deploy`. Verify it using
+3. Download the adopted catalog with `bun run catalog:adopted`, then deploy with
+   `bun run deploy`. Verify it using
    `bun scripts/verify-source.ts https://winget-thinkrail.vercel.app`.
    The Vercel Function imports a Bun-generated Node.js bundle, avoiding runtime
    TypeScript imports and extensionless module resolution.
@@ -231,13 +242,13 @@ measure CPU or transfer allowance. Vercel's separate built-in usage-anomaly
 alerts require a paid plan; its standard quota notifications are independent.
 
 Nightlies run daily at 03:00 UTC or manually, skip unchanged fork commits by
-comparing against `nightly.sha`, and use
-`0.0.0-nightly.<UTC YYYYMMDDHHmmss>` versions. `nightly.sha` is absent until the first
-successful adoption. Change `scripts/catalog.ts`, not generated catalog entries.
+comparing against `sourceSha` in the `publication-state` release body, and use
+`0.0.0-nightly.<UTC YYYYMMDDHHmmss>` versions. Change `scripts/catalog.ts`,
+not generated catalog entries.
 
 Publication order is immutable prerelease downloads, candidate qualification gates,
 Vercel deployment and public-source verification, version-qualified desktop archive, desktop update manifest,
-then the generated catalog/source-marker commit and push. The desktop feed lives
+then an update to the `publication-state` release body. The desktop feed lives
 under the `desktop-updates` release. Its manifest changes only after the new archive
 is available.
 
@@ -247,10 +258,26 @@ fix the cause, and start a new workflow run. The unchanged source marker makes i
 retry. Do not rerun only failed installation jobs after cleanup has removed their
 candidate downloads.
 
-For source-only fixes, deploy from up-to-date `main` containing the adopted catalog,
-outside an active nightly run. An old or empty local catalog would remove advertised
-packages. Keep old release downloads even though WinGet indexes only the latest
+For source-only fixes, use up-to-date `main` and run `bun run catalog:adopted`
+before deploying, outside an active nightly run. An old local catalog would
+roll back advertised packages; the deployment command rejects an empty catalog. Keep old release downloads even though WinGet indexes only the latest
 adopted nightly.
+
+### One-time migration from Git-held state
+
+The first updated Nightly run seeds Releases from the previously adopted Git
+snapshot at commit `03b9ebf1ca8170b199278de4dcd9ed5f60a72dcb`. It uploads the
+existing catalog and source SHA to `v0.0.0-nightly.20261006095947` and initializes
+`publication-state`. Existing assets are checked rather than overwritten; a
+partial migration can be retried. This preserves the native upgrade baseline and
+avoids rebuilding an unchanged source. It never chooses the newest candidate.
+The migration is a no-op once publication state exists and never deploys.
+The check job needs Contents write permission for this one-time migration; no job
+has persisted checkout credentials or writes to a Git branch.
+
+The pointer is one release-body update, so readers cannot observe a catalog and SHA from different publications. A failed
+pointer update retains the prior state; a retry rebuilds because its SHA is unchanged.
+The state release is mutable and must not have release immutability enabled.
 
 ## Maintainer verification
 
@@ -259,6 +286,7 @@ bun install --frozen-lockfile
 bun run check       # strict TypeScript, Biome, and unit tests
 bun run build       # static page + Node.js bundle, no deployment
 bun run dev         # local Vercel development
+bun run catalog:adopted # download adopted metadata for local inspection/deployment
 ```
 
 `Check` CI also runs actionlint and PowerShell parsing/PSScriptAnalyzer.

@@ -5,11 +5,13 @@ This repository distributes the CommanderTvis ThinkRail fork, not JetBrains rele
 Before changing build targets, installer behavior, source identity, or publication ordering,
 read `goal-and-requirements.md` and `architecture.md`. Deployment and recovery instructions
 live in `architecture.md`. Keep `README.md` user-facing: installation, updates,
-uninstallation, and user-visible limitations. Review `gotchas.md` before changing
-architecture support.
+uninstallation, and user-visible limitations.
 
-`catalog.json` and `nightly.sha` are workflow-owned output. Edit `scripts/catalog.ts`
-for manifest changes; keep its tests aligned. The empty bootstrap catalog is intentional.
+`catalog.json` is an ignored local build input. Nightly catalogs and source SHAs live
+in GitHub Releases; the `publication-state` release identifies the adopted nightly.
+Nightly publication must never commit or push to Git. Edit `scripts/catalog.ts` for
+manifest changes; keep its tests aligned. Download adopted state with
+`bun run catalog:adopted` before deploying; empty catalogs are only for local checks.
 The source identifier is persistent installation state, not a display label.
 
 Use `bun run check` and `bun run build` for local verification. Workflow and PowerShell
