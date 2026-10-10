@@ -59,3 +59,46 @@ test("unexpected upstream analytics contracts fail before patching", () => {
     "Upstream release analytics contract changed",
   );
 });
+
+test("the failed nightly's optional-key action stamps analytics off", async () => {
+  const upstream = await Bun.file(
+    new URL("./fixtures/build-binary-281bda9.yml", import.meta.url),
+  ).text();
+  const patched = disableReleaseAnalytics(upstream);
+  const root = await mkdtemp(join(tmpdir(), "thinkrail-optional-analytics-"));
+  try {
+    await mkdir(join(root, "packages/shared/src"), { recursive: true });
+    const stamp = patched.split("      run: |\n")[1]?.split("    - name:")[0];
+    if (!stamp) throw new Error("Stamping step missing");
+    for (const key of ["", "phc_fixture", "invalid-inherited-key"]) {
+      const result = Bun.spawnSync(
+        ["bash", "-c", stamp.replace(/^ {8}/gm, "")],
+        {
+          cwd: root,
+          env: {
+            ...process.env,
+            GIT_DIR: join(process.cwd(), ".git"),
+            VERSION: "0.0.0-nightly.fixture",
+            CHANNEL: "nightly",
+            POSTHOG_PROJECT_KEY: key,
+          },
+        },
+      );
+      expect(result.exitCode).toBe(0);
+      expect(
+        await Bun.file(join(root, "packages/shared/src/version.ts")).text(),
+      ).toContain('export const posthogProjectKey = "";');
+    }
+    expect(patched.split("    - name: Build web UI")[1]).toBe(
+      upstream.split("    - name: Build web UI")[1],
+    );
+    expect(() =>
+      disableReleaseAnalytics(upstream.replace('""|phc_?*', '""|phc_*')),
+    ).toThrow("Upstream release analytics contract changed");
+    expect(() => disableReleaseAnalytics(upstream + upstream)).toThrow(
+      "Upstream release analytics contract changed",
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
