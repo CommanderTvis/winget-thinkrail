@@ -4,6 +4,7 @@ Install nightly builds of the [CommanderTvis ThinkRail fork](https://github.com/
 
 - CLI: native Windows x64 and ARM64, available as `thinkrail`.
 - Desktop: Windows x64 only, requiring Windows 11 or later.
+- SharpRail: the [CommanderTvis SharpRail](https://github.com/CommanderTvis/sharprail) Avalonia prototype, Windows x64 only, mirrored from its `nightly` release.
 
 ## Install
 
@@ -29,6 +30,11 @@ winget install --id CommanderTvis.ThinkRail --exact --source thinkrail --scope u
 winget install --id CommanderTvis.ThinkRail.Desktop --exact --source thinkrail --scope user --interactive
 ```
 
+```powershell
+# SharpRail — x64 only; no command alias is added, launch client\SharpRail.UI.exe from the install folder
+winget install --id CommanderTvis.SharpRail --exact --source thinkrail --scope user
+```
+
 Open a new terminal after installing the CLI if `thinkrail` is not yet on PATH.
 
 ## Updates
@@ -38,6 +44,7 @@ New builds are checked for daily at 03:00 UTC and published when the fork change
 ```powershell
 winget upgrade --id CommanderTvis.ThinkRail --exact --source thinkrail
 winget upgrade --id CommanderTvis.ThinkRail.Desktop --exact --source thinkrail --interactive
+winget upgrade --id CommanderTvis.SharpRail --exact --source thinkrail
 ```
 
 Update the CLI through WinGet, not its built-in self-update command. The desktop also supports in-app updates from this fork's nightly feed.
@@ -47,6 +54,7 @@ Update the CLI through WinGet, not its built-in self-update command. The desktop
 ```powershell
 winget uninstall --id CommanderTvis.ThinkRail --exact --source thinkrail
 winget uninstall --id CommanderTvis.ThinkRail.Desktop --exact --source thinkrail
+winget uninstall --id CommanderTvis.SharpRail --exact --source thinkrail
 ```
 
 To remove the source, run this from an administrator terminal:
@@ -58,6 +66,8 @@ winget source remove --name thinkrail
 Removing the source alone does not uninstall either package or disable desktop in-app updates.
 
 ## Before installing
+
+SharpRail's package is not installation-tested on Windows runners by this repository; its WinGet portable-zip install is unverified. The SharpRail release carries no license metadata, so the package lists the license as unknown.
 
 These are unofficial, unsigned nightly builds. Windows SmartScreen or organizational policy may block them. Download checksums verify integrity, not publisher identity; this distribution does not disable Windows security protections.
 

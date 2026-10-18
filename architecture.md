@@ -131,6 +131,15 @@ and nested ZIP installers. Desktop metadata preserves Electrobun's setup ZIP and
 adjacent payload. Installation is interactive: Electrobun 2.0.1 has no silent-install
 switch, and `--quiet` must never be passed to setup as an installation switch.
 
+## SharpRail package
+
+`CommanderTvis.SharpRail` is x64-only. The release job copies the zip from
+`CommanderTvis/sharprail`'s mutable `nightly` release into the versioned prerelease as
+`sharprail-windows-x64.zip`, so the catalog's URL and SHA256 stay immutable. It is a nested
+portable zip (`client\SharpRail.UI.exe`) without a command alias. It builds nothing here, is
+not WinGet-install-qualified on runners, and does not gate publication; the adopted-catalog
+validator accepts a catalog with or without it so older adopted nightlies stay valid.
+
 ## Publication invariants
 
 Installer URLs identify an immutable GitHub prerelease and SHA256 checksums cover

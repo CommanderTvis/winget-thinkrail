@@ -23,7 +23,8 @@ export function validateCatalog(value: unknown, version: string) {
   const catalog = value as PackageManifest[];
   if (
     !Array.isArray(catalog) ||
-    catalog.length !== 2 ||
+    catalog.length < 2 ||
+    catalog.length > 3 ||
     !["CommanderTvis.ThinkRail", "CommanderTvis.ThinkRail.Desktop"].every(
       (id) =>
         catalog.filter((pkg) => pkg.PackageIdentifier === id).length === 1,

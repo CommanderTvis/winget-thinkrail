@@ -23,6 +23,7 @@ async function fixture() {
     "thinkrail-windows-x64.exe",
     "thinkrail-windows-arm64.exe",
     "thinkrail-desktop-windows-x64.zip",
+    "sharprail-windows-x64.zip",
   ]) {
     await writeFile(join(artifacts, name), name);
   }
@@ -40,6 +41,7 @@ test("generates one native dual-architecture CLI and one x64-only desktop", asyn
   expect(catalog.map((p) => p.PackageIdentifier)).toEqual([
     "CommanderTvis.ThinkRail",
     "CommanderTvis.ThinkRail.Desktop",
+    "CommanderTvis.SharpRail",
   ]);
   const cli = catalog[0]?.Versions[0];
   const desktop = catalog[1]?.Versions[0];
@@ -61,6 +63,15 @@ test("generates one native dual-architecture CLI and one x64-only desktop", asyn
     NestedInstallerType: "exe",
     NestedInstallerFiles: [{ RelativeFilePath: options.desktopSetupPath }],
   });
+  expect(catalog[2]?.Versions[0]?.Installers).toMatchObject([
+    {
+      Architecture: "x64",
+      InstallerType: "zip",
+      NestedInstallerType: "portable",
+      NestedInstallerFiles: [{ RelativeFilePath: "client\\SharpRail.UI.exe" }],
+      InstallerUrl: `https://github.com/${options.repository}/releases/download/v${options.version}/sharprail-windows-x64.zip`,
+    },
+  ]);
   expect(JSON.stringify(catalog)).not.toContain("JetBrains");
 });
 

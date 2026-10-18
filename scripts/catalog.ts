@@ -69,40 +69,70 @@ export async function generateCatalog(
     ],
     ...(await download("thinkrail-desktop-windows-x64.zip")),
   };
-  return [
+  const sharprail: Installer = {
+    Architecture: "x64",
+    InstallerType: "zip",
+    NestedInstallerType: "portable",
+    NestedInstallerFiles: [{ RelativeFilePath: "client\\SharpRail.UI.exe" }],
+    Scope: "user",
+    UpgradeBehavior: "install",
+    MinimumOSVersion: "10.0.17763.0",
+    ...(await download("sharprail-windows-x64.zip")),
+  };
+  const thinkrail = {
+    url: homepage,
+    license: "Apache-2.0",
+    description: "Unsigned nightly build of the CommanderTvis ThinkRail fork",
+    tags: ["thinkrail", "nightly", "ai"],
+  };
+  const packages = [
     {
       id: "CommanderTvis.ThinkRail",
       name: "ThinkRail CLI (CommanderTvis nightly)",
       moniker: "thinkrail",
       installers: cli,
+      ...thinkrail,
     },
     {
       id: "CommanderTvis.ThinkRail.Desktop",
       name: "ThinkRail Desktop (CommanderTvis nightly)",
       moniker: "thinkrail-desktop",
       installers: [desktop],
+      ...thinkrail,
     },
-  ].map(({ id, name, moniker, installers }) => ({
-    PackageIdentifier: id,
-    Versions: [
-      {
-        PackageVersion: version,
-        DefaultLocale: {
-          PackageLocale: "en-US",
-          Publisher: "CommanderTvis",
-          PublisherUrl: "https://github.com/CommanderTvis",
-          PackageName: name,
-          PackageUrl: homepage,
-          License: "Apache-2.0",
-          ShortDescription:
-            "Unsigned nightly build of the CommanderTvis ThinkRail fork",
-          Moniker: moniker,
-          Tags: ["thinkrail", "nightly", "ai"],
+    {
+      id: "CommanderTvis.SharpRail",
+      name: "SharpRail (CommanderTvis nightly)",
+      moniker: "sharprail",
+      installers: [sharprail],
+      url: "https://github.com/CommanderTvis/sharprail",
+      license: "Unknown",
+      description: "Unsigned nightly build of CommanderTvis SharpRail",
+      tags: ["sharprail", "nightly", "ai"],
+    },
+  ];
+  return packages.map(
+    ({ id, name, moniker, installers, url, license, description, tags }) => ({
+      PackageIdentifier: id,
+      Versions: [
+        {
+          PackageVersion: version,
+          DefaultLocale: {
+            PackageLocale: "en-US",
+            Publisher: "CommanderTvis",
+            PublisherUrl: "https://github.com/CommanderTvis",
+            PackageName: name,
+            PackageUrl: url,
+            License: license,
+            ShortDescription: description,
+            Moniker: moniker,
+            Tags: tags,
+          },
+          Installers: installers,
         },
-        Installers: installers,
-      },
-    ],
-  }));
+      ],
+    }),
+  );
 }
 
 if (import.meta.main) {
