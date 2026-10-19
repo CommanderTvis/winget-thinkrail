@@ -9,12 +9,15 @@ interface Options {
   version: string;
   artifacts: string;
   desktopSetupPath: string;
+  /** Stable JetBrains release, linked in place: `0.2.0` plus its `SHA256SUMS` text. */
+  jetbrains: { version: string; checksums: string };
 }
 
 export async function generateCatalog(
   options: Options,
 ): Promise<PackageManifest[]> {
-  const { repository, version, artifacts, desktopSetupPath } = options;
+  const { repository, version, artifacts, desktopSetupPath, jetbrains } =
+    options;
   if (
     !/^[\w.-]+\/[\w.-]+$/.test(repository) ||
     repository.split("/").some((part) => part === "." || part === "..")
@@ -69,6 +72,44 @@ export async function generateCatalog(
     ],
     ...(await download("thinkrail-desktop-windows-x64.zip")),
   };
+  if (!/^\d+\.\d+\.\d+$/.test(jetbrains.version)) {
+    throw new Error("Expected a stable JetBrains version");
+  }
+  const jetbrainsBase = `https://github.com/JetBrains/thinkrail/releases/download/v${jetbrains.version}`;
+  function jetbrainsDownload(name: string) {
+    const line = jetbrains.checksums
+      .split("\n")
+      .map((entry) => entry.trim().split(/\s+/))
+      .find(([, file]) => file === name);
+    const digest = line?.[0];
+    if (!digest || !/^[0-9a-f]{64}$/i.test(digest)) {
+      throw new Error(`Missing JetBrains checksum for ${name}`);
+    }
+    return {
+      InstallerUrl: `${jetbrainsBase}/${name}`,
+      InstallerSha256: digest.toUpperCase(),
+    };
+  }
+  const jetbrainsCli: Installer = {
+    Architecture: "x64",
+    InstallerType: "portable",
+    Scope: "user",
+    Commands: ["jetbrains-thinkrail"],
+    UpgradeBehavior: "install",
+    MinimumOSVersion: "10.0.17763.0",
+    ...jetbrainsDownload("thinkrail-windows-x64.exe"),
+  };
+  const jetbrainsDesktop: Installer = {
+    Architecture: "x64",
+    InstallerType: "zip",
+    NestedInstallerType: "exe",
+    NestedInstallerFiles: [{ RelativeFilePath: "ThinkRail-Setup.exe" }],
+    Scope: "user",
+    InstallModes: ["interactive"],
+    UpgradeBehavior: "install",
+    MinimumOSVersion: "10.0.22000.0",
+    ...jetbrainsDownload("thinkrail-desktop-windows-x64.zip"),
+  };
   const sharprail: Installer = {
     Architecture: "x64",
     InstallerType: "zip",
@@ -84,6 +125,13 @@ export async function generateCatalog(
     license: "Apache-2.0",
     description: "Unsigned nightly build of the CommanderTvis ThinkRail fork",
     tags: ["thinkrail", "nightly", "ai"],
+  };
+  const jetbrainsMeta = {
+    version: jetbrains.version,
+    url: "https://github.com/JetBrains/thinkrail",
+    license: "Unknown",
+    description: "Unmodified stable JetBrains ThinkRail release",
+    tags: ["thinkrail", "jetbrains", "ai"],
   };
   const packages = [
     {
@@ -101,6 +149,20 @@ export async function generateCatalog(
       ...thinkrail,
     },
     {
+      id: "CommanderTvis.JetBrainsThinkRail",
+      name: "ThinkRail CLI (JetBrains stable)",
+      moniker: "jetbrains-thinkrail",
+      installers: [jetbrainsCli],
+      ...jetbrainsMeta,
+    },
+    {
+      id: "CommanderTvis.JetBrainsThinkRail.Desktop",
+      name: "ThinkRail Desktop (JetBrains stable)",
+      moniker: "jetbrains-thinkrail-desktop",
+      installers: [jetbrainsDesktop],
+      ...jetbrainsMeta,
+    },
+    {
       id: "CommanderTvis.SharpRail",
       name: "SharpRail (CommanderTvis nightly)",
       moniker: "sharprail",
@@ -112,15 +174,27 @@ export async function generateCatalog(
     },
   ];
   return packages.map(
-    ({ id, name, moniker, installers, url, license, description, tags }) => ({
+    ({
+      id,
+      name,
+      moniker,
+      installers,
+      url,
+      license,
+      description,
+      tags,
+      ...rest
+    }) => ({
       PackageIdentifier: id,
       Versions: [
         {
-          PackageVersion: version,
+          PackageVersion: "version" in rest ? rest.version : version,
           DefaultLocale: {
             PackageLocale: "en-US",
-            Publisher: "CommanderTvis",
-            PublisherUrl: "https://github.com/CommanderTvis",
+            Publisher: id.includes("JetBrains") ? "JetBrains" : "CommanderTvis",
+            PublisherUrl: id.includes("JetBrains")
+              ? "https://github.com/JetBrains"
+              : "https://github.com/CommanderTvis",
             PackageName: name,
             PackageUrl: url,
             License: license,
@@ -147,6 +221,12 @@ if (import.meta.main) {
     version,
     artifacts,
     desktopSetupPath: "ThinkRail-Setup-canary.exe",
+    jetbrains: {
+      version: (
+        await readFile(join(artifacts, "jetbrains.version"), "utf8")
+      ).trim(),
+      checksums: await readFile(join(artifacts, "jetbrains.sha256"), "utf8"),
+    },
   });
   const formatted = execFileSync(
     process.execPath,

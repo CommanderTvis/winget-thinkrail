@@ -24,7 +24,7 @@ export function validateCatalog(value: unknown, version: string) {
   if (
     !Array.isArray(catalog) ||
     catalog.length < 2 ||
-    catalog.length > 3 ||
+    catalog.length > 5 ||
     !["CommanderTvis.ThinkRail", "CommanderTvis.ThinkRail.Desktop"].every(
       (id) =>
         catalog.filter((pkg) => pkg.PackageIdentifier === id).length === 1,
@@ -32,7 +32,8 @@ export function validateCatalog(value: unknown, version: string) {
     catalog.some(
       (pkg) =>
         pkg.Versions.length !== 1 ||
-        pkg.Versions[0]?.PackageVersion !== version,
+        (!pkg.PackageIdentifier.includes("JetBrains") &&
+          pkg.Versions[0]?.PackageVersion !== version),
     )
   ) {
     throw new Error("Catalog does not match the adopted nightly");

@@ -140,6 +140,16 @@ portable zip (`client\SharpRail.UI.exe`) without a command alias. It builds noth
 not WinGet-install-qualified on runners, and does not gate publication; the adopted-catalog
 validator accepts a catalog with or without it so older adopted nightlies stay valid.
 
+## JetBrains stable packages
+
+`CommanderTvis.JetBrainsThinkRail` (CLI, command `jetbrains-thinkrail`) and
+`CommanderTvis.JetBrainsThinkRail.Desktop` are x64-only and unmodified. The release job
+resolves JetBrains' latest stable tag and uses its `SHA256SUMS`; installer URLs point at
+that immutable JetBrains release rather than mirroring bytes. Their `PackageVersion` is the
+JetBrains version, not the nightly timestamp, so the adopted-catalog validator exempts them
+from the nightly-version check. Like SharpRail, they do not gate publication and are not
+WinGet-install-qualified on runners.
+
 ## Publication invariants
 
 Installer URLs identify an immutable GitHub prerelease and SHA256 checksums cover

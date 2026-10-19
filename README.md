@@ -1,16 +1,18 @@
-# ThinkRail nightlies for Windows
+# WinGet source for ThinkRail and SharpRail builds
 
-Install nightly builds of the [CommanderTvis ThinkRail fork](https://github.com/CommanderTvis/thinkrail) through WinGet. These builds track the `claude-code-integration-plugin-api` branch, not JetBrains releases.
+Install Windows builds through one WinGet source. Packages are grouped below.
 
-- CLI: native Windows x64 and ARM64, available as `thinkrail`.
-- Desktop: Windows x64 only, requiring Windows 11 or later.
-- SharpRail: the [CommanderTvis SharpRail](https://github.com/CommanderTvis/sharprail) Avalonia prototype, Windows x64 only, mirrored from its `nightly` release.
+| Package | Id | Architectures |
+| --- | --- | --- |
+| ThinkRail CLI (fork nightly) | `CommanderTvis.ThinkRail` | x64, ARM64 |
+| ThinkRail Desktop (fork nightly) | `CommanderTvis.ThinkRail.Desktop` | x64 |
+| ThinkRail CLI (JetBrains stable) | `CommanderTvis.JetBrainsThinkRail` | x64 |
+| ThinkRail Desktop (JetBrains stable) | `CommanderTvis.JetBrainsThinkRail.Desktop` | x64 |
+| SharpRail (nightly) | `CommanderTvis.SharpRail` | x64 |
 
-## Install
+## Add the source
 
-Use a current version of WinGet (App Installer).
-
-Add the source once from an administrator terminal:
+Use a current version of WinGet (App Installer). Add the source once from an administrator terminal:
 
 ```powershell
 winget source add --name thinkrail --arg https://winget-thinkrail.vercel.app --type Microsoft.Rest
@@ -20,57 +22,62 @@ If you previously added this source with a different URL, remove it with
 `winget source remove --name thinkrail`, then add the source above. Installed
 packages remain installed.
 
-Then install either package from a normal terminal:
+## ThinkRail fork nightly
+
+Nightly builds of the [CommanderTvis ThinkRail fork](https://github.com/CommanderTvis/thinkrail), branch `claude-code-integration-plugin-api`. Checked daily at 03:00 UTC and published when the fork changes. The CLI is available as `thinkrail`; the desktop requires Windows 11 or later.
 
 ```powershell
 # CLI — WinGet selects your native architecture
 winget install --id CommanderTvis.ThinkRail --exact --source thinkrail --scope user
+winget upgrade --id CommanderTvis.ThinkRail --exact --source thinkrail
+winget uninstall --id CommanderTvis.ThinkRail --exact --source thinkrail
 
 # Desktop — x64 only; follow the installer prompts
 winget install --id CommanderTvis.ThinkRail.Desktop --exact --source thinkrail --scope user --interactive
-```
-
-```powershell
-# SharpRail — x64 only; no command alias is added, launch client\SharpRail.UI.exe from the install folder
-winget install --id CommanderTvis.SharpRail --exact --source thinkrail --scope user
-```
-
-Open a new terminal after installing the CLI if `thinkrail` is not yet on PATH.
-
-## Updates
-
-New builds are checked for daily at 03:00 UTC and published when the fork changes.
-
-```powershell
-winget upgrade --id CommanderTvis.ThinkRail --exact --source thinkrail
 winget upgrade --id CommanderTvis.ThinkRail.Desktop --exact --source thinkrail --interactive
-winget upgrade --id CommanderTvis.SharpRail --exact --source thinkrail
+winget uninstall --id CommanderTvis.ThinkRail.Desktop --exact --source thinkrail
 ```
 
-Update the CLI through WinGet, not its built-in self-update command. The desktop also supports in-app updates from this fork's nightly feed.
+Open a new terminal after installing the CLI if `thinkrail` is not yet on PATH. Update the CLI through WinGet, not its built-in self-update command. The desktop also supports in-app updates from this fork's nightly feed.
 
-## Uninstall
+## ThinkRail from JetBrains (stable)
+
+Unmodified stable releases of [JetBrains/thinkrail](https://github.com/JetBrains/thinkrail), linked from their GitHub release with its published checksums. Windows x64 only; JetBrains publishes no Windows ARM64 build. The CLI is available as `jetbrains-thinkrail` so it does not collide with the fork's `thinkrail`. The package version is the JetBrains release version and advances when a new stable release is published.
 
 ```powershell
-winget uninstall --id CommanderTvis.ThinkRail --exact --source thinkrail
-winget uninstall --id CommanderTvis.ThinkRail.Desktop --exact --source thinkrail
+# CLI
+winget install --id CommanderTvis.JetBrainsThinkRail --exact --source thinkrail --scope user
+winget upgrade --id CommanderTvis.JetBrainsThinkRail --exact --source thinkrail
+winget uninstall --id CommanderTvis.JetBrainsThinkRail --exact --source thinkrail
+
+# Desktop — follow the installer prompts
+winget install --id CommanderTvis.JetBrainsThinkRail.Desktop --exact --source thinkrail --scope user --interactive
+winget upgrade --id CommanderTvis.JetBrainsThinkRail.Desktop --exact --source thinkrail --interactive
+winget uninstall --id CommanderTvis.JetBrainsThinkRail.Desktop --exact --source thinkrail
+```
+
+## SharpRail (nightly)
+
+The [CommanderTvis SharpRail](https://github.com/CommanderTvis/sharprail) Avalonia prototype, Windows x64 only, mirrored from its `nightly` release. No command alias is added; launch `client\SharpRail.UI.exe` from the install folder. This package is not installation-tested on Windows runners by this repository, and its WinGet portable-zip install is unverified.
+
+```powershell
+winget install --id CommanderTvis.SharpRail --exact --source thinkrail --scope user
+winget upgrade --id CommanderTvis.SharpRail --exact --source thinkrail
 winget uninstall --id CommanderTvis.SharpRail --exact --source thinkrail
 ```
 
-To remove the source, run this from an administrator terminal:
+## Remove the source
 
 ```powershell
 winget source remove --name thinkrail
 ```
 
-Removing the source alone does not uninstall either package or disable desktop in-app updates.
+Removing the source alone does not uninstall any package or disable desktop in-app updates.
 
 ## Before installing
 
-SharpRail's package is not installation-tested on Windows runners by this repository; its WinGet portable-zip install is unverified. The SharpRail release carries no license metadata, so the package lists the license as unknown.
+These are unofficial, unsigned builds. Windows SmartScreen or organizational policy may block them. Download checksums verify integrity, not publisher identity; this distribution does not disable Windows security protections.
 
-These are unofficial, unsigned nightly builds. Windows SmartScreen or organizational policy may block them. Download checksums verify integrity, not publisher identity; this distribution does not disable Windows security protections.
-
-Desktop installation is interactive; silent installation is not supported. Do not pass `--quiet` to the desktop setup executable: it is an uninstall command.
+Desktop installation is interactive; silent installation is not supported. Do not pass `--quiet` to a desktop setup executable: it is an uninstall command.
 
 The desktop shares its canary installation identity with other ThinkRail canary distributions. Back up your data before switching distributions; do not expect them to coexist side by side.

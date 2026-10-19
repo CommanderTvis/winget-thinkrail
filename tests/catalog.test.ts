@@ -32,6 +32,10 @@ async function fixture() {
     repository: "CommanderTvis/winget-thinkrail",
     version: "0.0.0-nightly.20260918170000",
     desktopSetupPath: "ThinkRail-Setup-canary.exe",
+    jetbrains: {
+      version: "0.2.0",
+      checksums: `${"a".repeat(64)}  thinkrail-windows-x64.exe\n${"b".repeat(64)}  thinkrail-desktop-windows-x64.zip\n`,
+    },
   };
 }
 
@@ -41,6 +45,8 @@ test("generates one native dual-architecture CLI and one x64-only desktop", asyn
   expect(catalog.map((p) => p.PackageIdentifier)).toEqual([
     "CommanderTvis.ThinkRail",
     "CommanderTvis.ThinkRail.Desktop",
+    "CommanderTvis.JetBrainsThinkRail",
+    "CommanderTvis.JetBrainsThinkRail.Desktop",
     "CommanderTvis.SharpRail",
   ]);
   const cli = catalog[0]?.Versions[0];
@@ -63,7 +69,7 @@ test("generates one native dual-architecture CLI and one x64-only desktop", asyn
     NestedInstallerType: "exe",
     NestedInstallerFiles: [{ RelativeFilePath: options.desktopSetupPath }],
   });
-  expect(catalog[2]?.Versions[0]?.Installers).toMatchObject([
+  expect(catalog[4]?.Versions[0]?.Installers).toMatchObject([
     {
       Architecture: "x64",
       InstallerType: "zip",
@@ -72,12 +78,34 @@ test("generates one native dual-architecture CLI and one x64-only desktop", asyn
       InstallerUrl: `https://github.com/${options.repository}/releases/download/v${options.version}/sharprail-windows-x64.zip`,
     },
   ]);
-  expect(JSON.stringify(catalog)).not.toContain("JetBrains");
+  expect(catalog[2]?.Versions[0]).toMatchObject({
+    PackageVersion: "0.2.0",
+    Installers: [
+      {
+        Commands: ["jetbrains-thinkrail"],
+        InstallerSha256: "A".repeat(64),
+        InstallerUrl:
+          "https://github.com/JetBrains/thinkrail/releases/download/v0.2.0/thinkrail-windows-x64.exe",
+      },
+    ],
+  });
+  expect(catalog[3]?.Versions[0]?.Installers[0]).toMatchObject({
+    NestedInstallerFiles: [{ RelativeFilePath: "ThinkRail-Setup.exe" }],
+    InstallerSha256: "B".repeat(64),
+  });
 });
 
 test("CLI output matches the catalog and repository formatting", async () => {
   const options = await fixture();
   const output = join(options.artifacts, "catalog.json");
+  await writeFile(
+    join(options.artifacts, "jetbrains.version"),
+    `${options.jetbrains.version}\n`,
+  );
+  await writeFile(
+    join(options.artifacts, "jetbrains.sha256"),
+    options.jetbrains.checksums,
+  );
   execFileSync(process.execPath, [
     fileURLToPath(new URL("../scripts/catalog.ts", import.meta.url)),
     options.repository,

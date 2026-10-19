@@ -29,7 +29,7 @@ export function renderPage(catalog: PackageManifest[]): string {
 <body>
   <main>
     <h1>ThinkRail nightlies for Windows</h1>
-    <p>Install nightly builds of the <a href="https://github.com/CommanderTvis/thinkrail">CommanderTvis ThinkRail fork</a> with WinGet. These builds follow the <code>claude-code-integration-plugin-api</code> branch, not JetBrains releases.</p>
+    <p>Install nightly builds of the <a href="https://github.com/CommanderTvis/thinkrail">CommanderTvis ThinkRail fork</a> with WinGet. These builds follow the <code>claude-code-integration-plugin-api</code> branch. The source also offers unmodified JetBrains stable releases and SharpRail nightlies.</p>
     <div aria-label="Package availability">
       <article>
         <h2>CLI</h2>
@@ -40,6 +40,16 @@ export function renderPage(catalog: PackageManifest[]): string {
         <h2>Desktop</h2>
         <p>Windows 11 or later · x64 only<br>Interactive setup with an in-app updater.</p>
         <div>${version("CommanderTvis.ThinkRail.Desktop")}</div>
+      </article>
+      <article>
+        <h2>JetBrains ThinkRail</h2>
+        <p>Unmodified stable release · Windows x64 only<br>CLI as <code>jetbrains-thinkrail</code>, plus desktop.</p>
+        <div>${version("CommanderTvis.JetBrainsThinkRail")}</div>
+      </article>
+      <article>
+        <h2>SharpRail</h2>
+        <p>Nightly Avalonia prototype · Windows x64 only</p>
+        <div>${version("CommanderTvis.SharpRail")}</div>
       </article>
     </div>
     <section aria-labelledby="source-heading">
@@ -57,6 +67,11 @@ export function renderPage(catalog: PackageManifest[]): string {
       <h3>Desktop</h3>
       <pre tabindex="0" aria-label="Install the desktop"><code>winget install --id CommanderTvis.ThinkRail.Desktop --exact --source thinkrail --scope user --interactive</code></pre>
       <p>Follow the installer prompts. Silent installation is not supported.</p>
+      <h3>JetBrains ThinkRail (stable)</h3>
+      <pre tabindex="0" aria-label="Install the JetBrains CLI and desktop"><code>winget install --id CommanderTvis.JetBrainsThinkRail --exact --source thinkrail --scope user
+winget install --id CommanderTvis.JetBrainsThinkRail.Desktop --exact --source thinkrail --scope user --interactive</code></pre>
+      <h3>SharpRail</h3>
+      <pre tabindex="0" aria-label="Install SharpRail"><code>winget install --id CommanderTvis.SharpRail --exact --source thinkrail --scope user</code></pre>
     </section>
     <section aria-labelledby="update-heading">
       <h2 id="update-heading">Update packages</h2>

@@ -164,6 +164,13 @@ jobs:
           gh release download nightly --repo CommanderTvis/sharprail \
             --pattern SharpRail-nightly-win-x64.zip --output artifacts/sharprail-windows-x64.zip
           unzip -l artifacts/sharprail-windows-x64.zip | grep -q 'client\\SharpRail.UI.exe'
+      - name: Pin the latest stable JetBrains release checksums
+        run: |
+          set -euo pipefail
+          tag=$(gh release view --repo JetBrains/thinkrail --json tagName --jq .tagName)
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Unexpected stable tag $tag"; exit 1; }
+          echo "${tag#v}" > artifacts/jetbrains.version
+          gh release download "$tag" --repo JetBrains/thinkrail --pattern SHA256SUMS --output artifacts/jetbrains.sha256
       - run: bun install --frozen-lockfile
       - run: bun run check
       - name: Generate candidate catalog and checksums

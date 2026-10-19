@@ -40,13 +40,13 @@ test("page availability follows each bundled package and escapes version text", 
   const page = async (packages: PackageManifest[]) =>
     (await createSource(packages).fetch(new Request("https://source/"))).text();
   const empty = await page([]);
-  expect(empty.match(/Awaiting the first verified nightly/g)).toHaveLength(2);
+  expect(empty.match(/Awaiting the first verified nightly/g)).toHaveLength(4);
   expect(empty).not.toContain("Available ·");
   const published = await page(catalog);
   expect(published).toContain("Available · nightly.&#60;script&#62;&#34;&#38;");
   expect(published).not.toContain("<script>");
   expect(published.match(/Awaiting the first verified nightly/g)).toHaveLength(
-    1,
+    3,
   );
 });
 
