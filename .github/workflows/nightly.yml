@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '0 3 * * *'
   workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild and republish even when the fork commit is already adopted
+        type: boolean
+        default: false
 
 concurrency:
   group: nightly
@@ -40,6 +45,7 @@ jobs:
       - id: compare
         env:
           GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ inputs.force }}
         shell: bash
         run: |
           set -euo pipefail
@@ -48,7 +54,7 @@ jobs:
           last=$(bun scripts/publication.ts sha "$GITHUB_REPOSITORY")
           {
             echo "sha=$sha"
-            echo "changed=$([ "$sha" != "$last" ] && echo true || echo false)"
+            echo "changed=$([ "$sha" != "$last" ] || [ "$FORCE" = true ] && echo true || echo false)"
             echo "version=0.0.0-nightly.$(date -u +%Y%m%d%H%M%S)"
           } >> "$GITHUB_OUTPUT"
 
