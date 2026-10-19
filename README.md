@@ -56,6 +56,29 @@ winget upgrade --id CommanderTvis.JetBrainsThinkRail.Desktop --exact --source th
 winget uninstall --id CommanderTvis.JetBrainsThinkRail.Desktop --exact --source thinkrail
 ```
 
+## Verify the JetBrains packages
+
+The JetBrains packages link directly to JetBrains' GitHub release; this source only supplies metadata. To check that the file and the hash this source advertises are exactly what JetBrains published, run:
+
+```powershell
+$id = 'CommanderTvis.JetBrainsThinkRail'   # or CommanderTvis.JetBrainsThinkRail.Desktop
+$version = (Invoke-RestMethod "https://winget-thinkrail.vercel.app/packageManifests/$id").Data.Versions[0]
+$installer = $version.Installers[0]
+$file = Split-Path $installer.InstallerUrl -Leaf
+if (-not $installer.InstallerUrl.StartsWith('https://github.com/JetBrains/thinkrail/releases/download/')) { throw 'Not a JetBrains download URL' }
+$path = Join-Path $env:TEMP $file
+Invoke-WebRequest $installer.InstallerUrl -OutFile $path
+$actual = (Get-FileHash $path -Algorithm SHA256).Hash
+$release = Invoke-RestMethod "https://api.github.com/repos/JetBrains/thinkrail/releases/tags/v$($version.PackageVersion)"
+$official = ($release.assets | Where-Object name -eq $file).digest -replace '^sha256:', ''
+"Downloaded:     $actual"
+"Source says:    $($installer.InstallerSha256)"
+"JetBrains says: $official"
+if ($actual -eq $installer.InstallerSha256 -and $actual -eq $official) { 'OK: matches JetBrains' } else { 'MISMATCH: do not install' }
+```
+
+The three hashes must agree. The comparison is case-insensitive in PowerShell. The same SHA256SUMS used for the manifest is attached to each nightly release here as `jetbrains.sha256`. JetBrains does not publish signatures or build attestations, so this proves the bytes match their release, not who built them.
+
 ## SharpRail (nightly)
 
 The [CommanderTvis SharpRail](https://github.com/CommanderTvis/sharprail) Avalonia prototype, Windows x64 only, mirrored from its `nightly` release. No command alias is added; launch `client\SharpRail.UI.exe` from the install folder. This package is not installation-tested on Windows runners by this repository, and its WinGet portable-zip install is unverified.
