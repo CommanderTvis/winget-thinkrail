@@ -144,7 +144,7 @@ winget uninstall --id CommanderTvis.JetBrainsThinkRail.Desktop --exact --source 
     </section>
     <section aria-labelledby="verify-heading">
       <h2 id="verify-heading">Verify the JetBrains packages</h2>
-      <p>The JetBrains packages link directly to JetBrains’ GitHub release; this source only supplies metadata. To check that the file and the hash this source advertises are exactly what JetBrains published, run:</p>
+      <p>The JetBrains packages link directly to JetBrains’ GitHub release; this source only supplies metadata. To check that the file and the hash this source advertises are exactly what JetBrains published, run this in PowerShell (Windows PowerShell 5.1 or PowerShell 7):</p>
       <pre tabindex="0" aria-label="Verify JetBrains downloads"><code>$id = 'CommanderTvis.JetBrainsThinkRail'   # or CommanderTvis.JetBrainsThinkRail.Desktop
 $version = (Invoke-RestMethod "https://winget-thinkrail.vercel.app/packageManifests/$id").Data.Versions[0]
 $installer = $version.Installers[0]
