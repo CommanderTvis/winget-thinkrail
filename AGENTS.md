@@ -1,6 +1,10 @@
 # winget-thinkrail
 
-This repository distributes the CommanderTvis ThinkRail fork, not JetBrains releases.
+This repository distributes a WinGet source with three package groups: the CommanderTvis
+ThinkRail fork nightlies (built here), unmodified JetBrains ThinkRail stable releases
+(`CommanderTvis.JetBrainsThinkRail*`, linked in place using JetBrains' `SHA256SUMS`), and
+SharpRail nightlies (`CommanderTvis.SharpRail`, mirrored from `CommanderTvis/sharprail`'s
+`nightly` release). Only the fork packages are built and install-qualified here.
 
 Before changing build targets, installer behavior, source identity, or publication ordering,
 read `goal-and-requirements.md` and `architecture.md`. Deployment and recovery instructions
@@ -9,8 +13,11 @@ uninstallation, and user-visible limitations.
 
 `catalog.json` is an ignored local build input. Nightly catalogs and source SHAs live
 in GitHub Releases; the `publication-state` release identifies the adopted nightly.
-Nightly publication must never commit or push to Git. Edit `scripts/catalog.ts` for
-manifest changes; keep its tests aligned. Download adopted state with
+Nightly publication must never commit or push to Git. An unchanged fork commit skips
+the nightly; a manual dispatch with `force=true` republishes anyway. Do not push to `main`
+while a nightly runs: publication refuses a moved `main`. Edit `scripts/catalog.ts` for
+manifest changes; keep its tests aligned. The README and `src/page.ts` list the same
+packages, grouped per package, and must change together. Download adopted state with
 `bun run catalog:adopted` before deploying; empty catalogs are only for local checks.
 The source identifier is persistent installation state, not a display label.
 
