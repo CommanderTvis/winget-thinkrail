@@ -2,13 +2,13 @@
 
 Install Windows builds through one WinGet source. Packages are grouped below.
 
-| Package | Id | Architectures |
-| --- | --- | --- |
-| ThinkRail CLI (fork nightly) | `CommanderTvis.ThinkRail` | x64, ARM64 |
-| ThinkRail Desktop (fork nightly) | `CommanderTvis.ThinkRail.Desktop` | x64 |
-| ThinkRail CLI (JetBrains stable) | `CommanderTvis.JetBrainsThinkRail` | x64 |
-| ThinkRail Desktop (JetBrains stable) | `CommanderTvis.JetBrainsThinkRail.Desktop` | x64 |
-| SharpRail (nightly) | `CommanderTvis.SharpRail` | x64 |
+| Package | Author | Id | Architectures |
+| --- | --- | --- | --- |
+| [ThinkRail CLI (fork nightly)](https://github.com/CommanderTvis/thinkrail) | [CommanderTvis](https://github.com/CommanderTvis) | `CommanderTvis.ThinkRail` | x64, ARM64 |
+| [ThinkRail Desktop (fork nightly)](https://github.com/CommanderTvis/thinkrail) | [CommanderTvis](https://github.com/CommanderTvis) | `CommanderTvis.ThinkRail.Desktop` | x64 |
+| [ThinkRail CLI (JetBrains stable)](https://github.com/JetBrains/thinkrail/releases/latest) | [JetBrains](https://github.com/JetBrains) | `CommanderTvis.JetBrainsThinkRail` | x64 |
+| [ThinkRail Desktop (JetBrains stable)](https://github.com/JetBrains/thinkrail/releases/latest) | [JetBrains](https://github.com/JetBrains) | `CommanderTvis.JetBrainsThinkRail.Desktop` | x64 |
+| [SharpRail (nightly)](https://github.com/CommanderTvis/sharprail) | [CommanderTvis](https://github.com/CommanderTvis) | `CommanderTvis.SharpRail` | x64 |
 
 ## Add the source
 
