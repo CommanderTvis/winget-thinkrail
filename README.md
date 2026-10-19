@@ -56,7 +56,7 @@ winget upgrade --id CommanderTvis.JetBrainsThinkRail.Desktop --exact --source th
 winget uninstall --id CommanderTvis.JetBrainsThinkRail.Desktop --exact --source thinkrail
 ```
 
-## Verify the JetBrains packages
+### Verify the downloads
 
 The JetBrains packages link directly to JetBrains' GitHub release; this source only supplies metadata. To check that the file and the hash this source advertises are exactly what JetBrains published, run this in PowerShell (Windows PowerShell 5.1 or PowerShell 7):
 
