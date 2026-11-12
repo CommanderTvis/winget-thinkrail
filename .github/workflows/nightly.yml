@@ -169,7 +169,7 @@ jobs:
           set -euo pipefail
           gh release download nightly --repo CommanderTvis/sharprail \
             --pattern SharpRail-nightly-win-x64.zip --output artifacts/sharprail-windows-x64.zip
-          unzip -l artifacts/sharprail-windows-x64.zip | grep -q 'client\\SharpRail.UI.exe'
+          unzip -l artifacts/sharprail-windows-x64.zip | grep -Eq 'client[/\\]SharpRail\.UI\.exe$'
       - name: Pin the latest stable JetBrains release checksums
         run: |
           set -euo pipefail
