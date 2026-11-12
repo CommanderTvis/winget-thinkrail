@@ -115,9 +115,9 @@ existing CLI version-stamping, web-build, compile, and smoke commands without
 attempting an unsupported Electrobun ARM64 desktop build. No sibling checkout is
 modified by this repository's development work.
 
-The fork currently pins `bun-pty` 0.4.10, whose Windows DLL is x64-only. ARM64 CI
+The fork currently pins `bun-pty` 0.5.1, whose Windows DLLs are x64-only. ARM64 CI
 builds the DLL from that package's immutable source commit with its Cargo lockfile
-and replaces only the dependency binary in the disposable checkout before compiling
+and replaces only the dependency binaries (both ARM64 and generic DLL names) in the disposable checkout before compiling
 the CLI. A dependency-version mismatch fails closed and requires reviewing the new
 package rather than silently mixing native code versions. Native ARM64 smoke is a
 release gate, not an assumed consequence of successful cross-compilation.

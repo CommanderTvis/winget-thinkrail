@@ -108,7 +108,7 @@ jobs:
         if: matrix.arch == 'arm64'
         with:
           repository: sursaone/bun-pty
-          ref: f46192643865ab7fe7a76da63363f5d174210bfe # bun-pty 0.4.10 npm gitHead
+          ref: 14ac2cabec8484d0f02234ef300b2b46c4b908fe # bun-pty 0.5.1 npm gitHead
           path: native-pty
           persist-credentials: false
       - name: Build and smoke native ARM64 CLI

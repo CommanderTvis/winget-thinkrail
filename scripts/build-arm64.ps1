@@ -8,13 +8,16 @@ if ($Version -notmatch '^0\.0\.0-nightly\.\d{14}$') { throw 'Invalid nightly ver
 $PtySource = (Resolve-Path $PtySource).Path
 $ptyRoot = & bun -e 'import { dirname, resolve } from "node:path"; console.log(resolve(dirname(Bun.resolveSync("bun-pty", resolve("packages/server"))), ".."))'
 $ptyPackage = Get-Content (Join-Path $ptyRoot 'package.json') -Raw | ConvertFrom-Json
-if ($ptyPackage.version -ne '0.4.10') { throw 'Review the native PTY build before changing bun-pty versions' }
+if ($ptyPackage.version -ne '0.5.1') { throw 'Review the native PTY build before changing bun-pty versions' }
 $ptyCommit = & git -C $PtySource rev-parse HEAD
-if ($ptyCommit -ne 'f46192643865ab7fe7a76da63363f5d174210bfe') { throw 'Unexpected bun-pty source revision' }
+if ($ptyCommit -ne '14ac2cabec8484d0f02234ef300b2b46c4b908fe') { throw 'Unexpected bun-pty source revision' }
 & rustup toolchain install 1.94.0 --profile minimal --target aarch64-pc-windows-msvc
 & cargo +1.94.0 build --manifest-path (Join-Path $PtySource 'rust-pty/Cargo.toml') --release --locked --target aarch64-pc-windows-msvc
 $dll = Join-Path $PtySource 'rust-pty/target/aarch64-pc-windows-msvc/release/rust_pty.dll'
-Copy-Item $dll (Join-Path $ptyRoot 'rust-pty/target/release/rust_pty.dll') -Force
+# bun-pty 0.5+ loads rust_pty_arm64.dll before rust_pty.dll on ARM64; replace both.
+foreach ($name in 'rust_pty_arm64.dll', 'rust_pty.dll') {
+    Copy-Item $dll (Join-Path $ptyRoot "rust-pty/target/release/$name") -Force
+}
 $commit = & git rev-parse --short HEAD
 @"
 export const version = "$Version";

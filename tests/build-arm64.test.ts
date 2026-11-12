@@ -35,7 +35,7 @@ test("ARM64 preparation resolves a dependency installed only in the server works
       join(packageRoot, "package.json"),
       JSON.stringify({
         name: "bun-pty",
-        version: "0.4.10",
+        version: "0.5.1",
         main: "src/index.ts",
       }),
     );
