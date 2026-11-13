@@ -1,8 +1,8 @@
 # winget
 
-This repository distributes a WinGet source with one package, `CommanderTvis.SharpRail`,
-mirrored from the `SharpRail-nightly-win-x64.zip` asset of `CommanderTvis/tereditor`'s
-`nightly` release. Nothing is built here. The ThinkRail fork and JetBrains packages are
+This repository distributes a WinGet source with one package, `CommanderTvis.Tereditor`,
+mirrored from the `SharpRail-nightly-win-x64.zip` and `SharpRail-nightly-win-arm64.zip`
+assets of `CommanderTvis/tereditor`'s `nightly` release. Nothing is built here. The ThinkRail fork and JetBrains packages are
 no longer published.
 
 Before changing build targets, installer behavior, source identity, or publication ordering,
@@ -12,7 +12,7 @@ uninstallation, and user-visible limitations.
 
 `catalog.json` is an ignored local build input. Nightly catalogs and source digests live
 in GitHub Releases; the `publication-state` release identifies the adopted nightly.
-Nightly publication must never commit or push to Git. An unchanged SharpRail zip skips
+Nightly publication must never commit or push to Git. Unchanged Tereditor zips skip
 the nightly; a manual dispatch with `force=true` republishes anyway. Do not push to `main`
 while a nightly runs: publication refuses a moved `main`. Edit `scripts/catalog.ts` for
 manifest changes; keep its tests aligned. The README and `src/page.ts` list the same
@@ -25,7 +25,7 @@ changes also require actionlint and PSScriptAnalyzer, as configured in `Check` C
 Native Windows success requires the hosted WinGet metadata gate; macOS verification is
 not a substitute. Run `scripts/test-install.ps1` only on disposable hosted runners.
 
-Keep changes inside this repository. SharpRail build changes belong in
+Keep changes inside this repository. Tereditor build changes belong in
 `CommanderTvis/tereditor`, not here.
 Never add credentials to files or weaken signing, branch protection, or Windows security
 to make publication pass.

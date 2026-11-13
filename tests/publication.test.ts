@@ -42,7 +42,7 @@ test("missing state is distinct from API failures and corrupt adoption state", a
 });
 
 test("deployment refuses empty, mixed-version, and duplicate-package catalogs", () => {
-  const catalog = ["CommanderTvis.ThinkRail", "CommanderTvis.SharpRail"].map(
+  const catalog = ["CommanderTvis.ThinkRail", "CommanderTvis.Tereditor"].map(
     (PackageIdentifier) => ({
       PackageIdentifier,
       Versions: [
@@ -61,12 +61,17 @@ test("deployment refuses empty, mixed-version, and duplicate-package catalogs", 
     }),
   );
   expect(validateCatalog(catalog, state.version)).toEqual(catalog);
-  const sharprail = catalog.slice(1);
-  expect(validateCatalog(sharprail, state.version)).toEqual(sharprail);
+  const tereditor = catalog.slice(1);
+  expect(validateCatalog(tereditor, state.version)).toEqual(tereditor);
+  const legacy = tereditor.map((pkg) => ({
+    ...pkg,
+    PackageIdentifier: "CommanderTvis.SharpRail",
+  }));
+  expect(validateCatalog(legacy, state.version)).toEqual(legacy);
   expect(() => validateCatalog([], state.version)).toThrow();
   expect(() => validateCatalog(catalog.slice(0, 1), state.version)).toThrow();
   expect(() =>
-    validateCatalog([...sharprail, ...sharprail], state.version),
+    validateCatalog([...tereditor, ...tereditor], state.version),
   ).toThrow();
   expect(() =>
     validateCatalog(catalog, "0.0.0-nightly.20261007000000"),
@@ -84,8 +89,6 @@ test("publication advances only after the Windows gate and public verification w
     workflow.indexOf("Verify the public source before adoption"),
   ).toBeLessThan(workflow.indexOf("publication.ts adopt"));
   expect(workflow).not.toMatch(/git (?:add|commit|push)|nightly\.sha/);
-  expect(workflow).toContain(
-    'echo "$SOURCE_SHA  artifacts/sharprail-windows-x64.zip" | sha256sum --check',
-  );
+  expect(workflow).toContain("(cd artifacts && sha256sum --check SHA256SUMS)");
   expect(workflow).toContain("artifacts/catalog.json artifacts/source.sha");
 });

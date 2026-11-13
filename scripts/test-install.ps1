@@ -23,7 +23,7 @@ function Invoke-Native([string]$File, [string[]]$Arguments) {
     if ($LASTEXITCODE -ne 0) { throw "$File $($Arguments -join ' ') failed ($LASTEXITCODE)" }
 }
 $candidate = @(Get-Content -Raw (Resolve-RepoPath $CandidateCatalog) | ConvertFrom-Json)
-$ids = @('CommanderTvis.SharpRail')
+$ids = @('CommanderTvis.Tereditor')
 foreach ($id in $ids) {
     $packages = @($candidate | Where-Object PackageIdentifier -EQ $id)
     if ($packages.Count -ne 1 -or @($packages[0].Versions).Count -ne 1) { throw "Expected one version of $id" }
@@ -96,7 +96,7 @@ try {
     if (!$ready) { throw "Trusted HTTPS source did not become ready: $readinessError" }
     $sourceAttempted = $true
     Invoke-Native $winget @('source', 'add', '--name', 'thinkrail-ci', '--arg', 'https://127.0.0.1:8443', '--type', 'Microsoft.Rest', '--accept-source-agreements', '--disable-interactivity')
-    $notice = 'SharpRail WinGet installation is not automated: this gate covers WinGet metadata, search, and show only.'
+    $notice = 'Tereditor WinGet installation is not automated: this gate covers WinGet metadata, search, and show only.'
     Write-Output $notice
     Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $notice
     Test-Package

@@ -4,7 +4,7 @@ import type { PackageManifest } from "../src/catalog";
 
 export interface Publication {
   version: string;
-  /** SHA256 of the mirrored SharpRail zip; states adopted while the ThinkRail fork was built hold its 40-hex commit. */
+  /** SHA256 of the mirrored Tereditor zip; states adopted while the ThinkRail fork was built hold its 40-hex commit. */
   sourceSha: string;
 }
 
@@ -28,8 +28,11 @@ export function validateCatalog(value: unknown, version: string) {
     catalog.length > 5 ||
     new Set(catalog.map((pkg) => pkg.PackageIdentifier)).size !==
       catalog.length ||
-    !catalog.some(
-      (pkg) => pkg.PackageIdentifier === "CommanderTvis.SharpRail",
+    // Catalogs adopted before the rename carry CommanderTvis.SharpRail instead.
+    !catalog.some((pkg) =>
+      ["CommanderTvis.Tereditor", "CommanderTvis.SharpRail"].includes(
+        pkg.PackageIdentifier,
+      ),
     ) ||
     catalog.some(
       (pkg) =>

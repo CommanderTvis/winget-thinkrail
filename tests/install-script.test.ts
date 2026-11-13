@@ -17,11 +17,11 @@ test("WinGet module and CLI release use their independent version formats", asyn
   );
 });
 
-test("the gate checks SharpRail metadata without installing anything", async () => {
+test("the gate checks Tereditor metadata without installing anything", async () => {
   const script = await Bun.file(
     new URL("../scripts/test-install.ps1", import.meta.url),
   ).text();
-  expect(script).toContain("$ids = @('CommanderTvis.SharpRail')");
+  expect(script).toContain("$ids = @('CommanderTvis.Tereditor')");
   expect(script).toContain("@('search'");
   expect(script).toContain("@('show'");
   for (const verb of ["install", "upgrade", "uninstall"]) {

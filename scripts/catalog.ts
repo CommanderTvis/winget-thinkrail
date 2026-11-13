@@ -23,24 +23,30 @@ export async function generateCatalog(
   if (!/^0\.0\.0-nightly\.\d{14}$/.test(version)) {
     throw new Error("Expected 0.0.0-nightly.<UTC YYYYMMDDHHmmss>");
   }
-  const name = "sharprail-windows-x64.zip";
-  const sharprail: Installer = {
-    Architecture: "x64",
-    InstallerType: "zip",
-    NestedInstallerType: "portable",
-    NestedInstallerFiles: [{ RelativeFilePath: "client\\SharpRail.UI.exe" }],
-    Scope: "user",
-    UpgradeBehavior: "install",
-    MinimumOSVersion: "10.0.17763.0",
-    InstallerUrl: `https://github.com/${repository}/releases/download/v${version}/${name}`,
-    InstallerSha256: createHash("sha256")
-      .update(await readFile(join(artifacts, name)))
-      .digest("hex")
-      .toUpperCase(),
-  };
+  const installers: Installer[] = await Promise.all(
+    (["x64", "arm64"] as const).map(async (Architecture) => {
+      const name = `tereditor-windows-${Architecture}.zip`;
+      return {
+        Architecture,
+        InstallerType: "zip",
+        NestedInstallerType: "portable",
+        NestedInstallerFiles: [
+          { RelativeFilePath: "client\\SharpRail.UI.exe" },
+        ],
+        Scope: "user",
+        UpgradeBehavior: "install",
+        MinimumOSVersion: "10.0.17763.0",
+        InstallerUrl: `https://github.com/${repository}/releases/download/v${version}/${name}`,
+        InstallerSha256: createHash("sha256")
+          .update(await readFile(join(artifacts, name)))
+          .digest("hex")
+          .toUpperCase(),
+      };
+    }),
+  );
   return [
     {
-      PackageIdentifier: "CommanderTvis.SharpRail",
+      PackageIdentifier: "CommanderTvis.Tereditor",
       Versions: [
         {
           PackageVersion: version,
@@ -48,15 +54,15 @@ export async function generateCatalog(
             PackageLocale: "en-US",
             Publisher: "CommanderTvis",
             PublisherUrl: "https://github.com/CommanderTvis",
-            PackageName: "SharpRail (CommanderTvis nightly)",
+            PackageName: "Tereditor (CommanderTvis nightly)",
             PackageUrl: "https://github.com/CommanderTvis/tereditor",
             License: "Unknown",
             ShortDescription:
-              "Unsigned nightly build of CommanderTvis SharpRail",
-            Moniker: "sharprail",
-            Tags: ["sharprail", "nightly", "ai"],
+              "Unsigned nightly build of CommanderTvis Tereditor",
+            Moniker: "tereditor",
+            Tags: ["tereditor", "nightly", "ai"],
           },
-          Installers: [sharprail],
+          Installers: installers,
         },
       ],
     },

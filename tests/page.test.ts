@@ -10,7 +10,7 @@ test("Source root serves an installation page while REST stays JSON", async () =
   const html = await response.text();
   expect(html).toContain('<html lang="en">');
   expect(html).toContain("winget source add --name thinkrail");
-  expect(html).toContain("CommanderTvis.SharpRail");
+  expect(html).toContain("CommanderTvis.Tereditor");
   const info = await source.fetch(new Request("https://source/information"));
   expect(info.headers.get("Content-Type")).toContain("application/json");
   expect((await info.json()).Data.SourceIdentifier).toBe(
@@ -21,7 +21,7 @@ test("Source root serves an installation page while REST stays JSON", async () =
 test("page availability follows each bundled package and escapes version text", async () => {
   const catalog: PackageManifest[] = [
     {
-      PackageIdentifier: "CommanderTvis.SharpRail",
+      PackageIdentifier: "CommanderTvis.Tereditor",
       Versions: [
         {
           PackageVersion: 'nightly.<script>"&',

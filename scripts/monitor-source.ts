@@ -73,7 +73,7 @@ if (import.meta.main) {
   if (reasons.length) {
     console.error(`🤖 Codex: ThinkRail traffic alert: ${reasons.join("; ")}`);
     console.error(
-      "Inspect https://vercel.com/commandertvis/winget-thinkrail/firewall",
+      "Inspect https://vercel.com/commandertvis/commandertvis-winget/firewall",
     );
     process.exitCode = 1;
   }
