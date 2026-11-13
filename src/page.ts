@@ -16,7 +16,6 @@ interface Row {
 }
 
 const fork = "https://github.com/CommanderTvis/thinkrail";
-const jetbrains = "https://github.com/JetBrains/thinkrail/releases/latest";
 const rows: Row[] = [
   {
     id: "CommanderTvis.ThinkRail",
@@ -32,22 +31,6 @@ const rows: Row[] = [
     link: fork,
     author: "CommanderTvis",
     authorLink: "https://github.com/CommanderTvis",
-    architectures: "x64",
-  },
-  {
-    id: "CommanderTvis.JetBrainsThinkRail",
-    name: "ThinkRail CLI (JetBrains stable)",
-    link: jetbrains,
-    author: "JetBrains",
-    authorLink: "https://github.com/JetBrains",
-    architectures: "x64",
-  },
-  {
-    id: "CommanderTvis.JetBrainsThinkRail.Desktop",
-    name: "ThinkRail Desktop (JetBrains stable)",
-    link: jetbrains,
-    author: "JetBrains",
-    authorLink: "https://github.com/JetBrains",
     architectures: "x64",
   },
   {
@@ -84,7 +67,7 @@ export function renderPage(catalog: PackageManifest[]): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="WinGet source for ThinkRail fork nightlies, unmodified JetBrains ThinkRail stable releases, and SharpRail nightlies on Windows.">
+  <meta name="description" content="WinGet source for ThinkRail fork nightlies and SharpRail nightlies on Windows.">
   <title>ThinkRail and SharpRail for Windows</title>
   <style>
     pre { white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -131,33 +114,10 @@ winget uninstall --id CommanderTvis.ThinkRail.Desktop --exact --source thinkrail
     </section>
     <section aria-labelledby="jetbrains-heading">
       <h2 id="jetbrains-heading">ThinkRail from JetBrains (stable)</h2>
-      <p>Unmodified stable releases of <a href="https://github.com/JetBrains/thinkrail">JetBrains/thinkrail</a>, linked from their GitHub release with its published checksums. Windows x64 only; JetBrains publishes no Windows ARM64 build. The CLI is available as <code>jetbrains-thinkrail</code> so it does not collide with the fork’s <code>thinkrail</code>. The package version is the JetBrains release version.</p>
-      <pre tabindex="0" aria-label="JetBrains ThinkRail commands"><code># CLI
-winget install --id CommanderTvis.JetBrainsThinkRail --exact --source thinkrail --scope user
-winget upgrade --id CommanderTvis.JetBrainsThinkRail --exact --source thinkrail
-winget uninstall --id CommanderTvis.JetBrainsThinkRail --exact --source thinkrail
-
-# Desktop — follow the installer prompts
-winget install --id CommanderTvis.JetBrainsThinkRail.Desktop --exact --source thinkrail --scope user --interactive
-winget upgrade --id CommanderTvis.JetBrainsThinkRail.Desktop --exact --source thinkrail --interactive
-winget uninstall --id CommanderTvis.JetBrainsThinkRail.Desktop --exact --source thinkrail</code></pre>
-      <h3 id="verify-heading">Verify the downloads</h3>
-      <p>The JetBrains packages link directly to JetBrains’ GitHub release; this source only supplies metadata. To check that the file and the hash this source advertises are exactly what JetBrains published, run this in PowerShell (Windows PowerShell 5.1 or PowerShell 7):</p>
-      <pre tabindex="0" aria-label="Verify JetBrains downloads"><code>$id = 'CommanderTvis.JetBrainsThinkRail'   # or CommanderTvis.JetBrainsThinkRail.Desktop
-$version = (Invoke-RestMethod "https://winget-thinkrail.vercel.app/packageManifests/$id").Data.Versions[0]
-$installer = $version.Installers[0]
-$file = Split-Path $installer.InstallerUrl -Leaf
-if (-not $installer.InstallerUrl.StartsWith('https://github.com/JetBrains/thinkrail/releases/download/')) { throw 'Not a JetBrains download URL' }
-$path = Join-Path $env:TEMP $file
-Invoke-WebRequest $installer.InstallerUrl -OutFile $path
-$actual = (Get-FileHash $path -Algorithm SHA256).Hash
-$release = Invoke-RestMethod "https://api.github.com/repos/JetBrains/thinkrail/releases/tags/v$($version.PackageVersion)"
-$official = ($release.assets | Where-Object name -eq $file).digest -replace '^sha256:', ''
-"Downloaded:     $actual"
-"Source says:    $($installer.InstallerSha256)"
-"JetBrains says: $official"
-if ($actual -eq $installer.InstallerSha256 -and $actual -eq $official) { 'OK: matches JetBrains' } else { 'MISMATCH: do not install' }</code></pre>
-      <p>The three hashes must agree. The same SHA256SUMS used for the manifest is attached to each nightly release as <code>jetbrains.sha256</code>. JetBrains does not publish signatures or build attestations, so this proves the bytes match their release, not who built them.</p>
+      <p>This source no longer carries JetBrains’ stable releases. The CLI is in the default <code>winget</code> source as <code>JetBrains.ThinkRailCLI</code>. If you installed <code>CommanderTvis.JetBrainsThinkRail</code> or <code>CommanderTvis.JetBrainsThinkRail.Desktop</code> from here, they will not receive updates; uninstall them and switch:</p>
+      <pre tabindex="0" aria-label="Switch to the JetBrains ThinkRail CLI"><code>winget uninstall --id CommanderTvis.JetBrainsThinkRail --exact
+winget uninstall --id CommanderTvis.JetBrainsThinkRail.Desktop --exact
+winget install --id JetBrains.ThinkRailCLI --exact --source winget</code></pre>
     </section>
     <section aria-labelledby="sharprail-heading">
       <h2 id="sharprail-heading">SharpRail (nightly)</h2>

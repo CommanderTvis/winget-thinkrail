@@ -1,10 +1,8 @@
 # winget-thinkrail
 
-This repository distributes a WinGet source with three package groups: the CommanderTvis
-ThinkRail fork nightlies (built here), unmodified JetBrains ThinkRail stable releases
-(`CommanderTvis.JetBrainsThinkRail*`, linked in place using JetBrains' `SHA256SUMS`), and
-SharpRail nightlies (`CommanderTvis.SharpRail`, mirrored from `CommanderTvis/sharprail`'s
-`nightly` release). Only the fork packages are built and install-qualified here.
+This repository distributes a WinGet source with two package groups: the CommanderTvis
+ThinkRail fork nightlies (built here) and SharpRail nightlies (`CommanderTvis.SharpRail`,
+mirrored from `CommanderTvis/sharprail`'s `nightly` release). Only the fork packages are built and install-qualified here.
 
 Before changing build targets, installer behavior, source identity, or publication ordering,
 read `goal-and-requirements.md` and `architecture.md`. Deployment and recovery instructions

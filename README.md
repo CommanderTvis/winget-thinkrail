@@ -6,8 +6,6 @@ Install Windows builds through one WinGet source. Packages are grouped below.
 | --- | --- | --- | --- |
 | [ThinkRail CLI (fork nightly)](https://github.com/CommanderTvis/thinkrail) | [CommanderTvis](https://github.com/CommanderTvis) | `CommanderTvis.ThinkRail` | x64, ARM64 |
 | [ThinkRail Desktop (fork nightly)](https://github.com/CommanderTvis/thinkrail) | [CommanderTvis](https://github.com/CommanderTvis) | `CommanderTvis.ThinkRail.Desktop` | x64 |
-| [ThinkRail CLI (JetBrains stable)](https://github.com/JetBrains/thinkrail/releases/latest) | [JetBrains](https://github.com/JetBrains) | `CommanderTvis.JetBrainsThinkRail` | x64 |
-| [ThinkRail Desktop (JetBrains stable)](https://github.com/JetBrains/thinkrail/releases/latest) | [JetBrains](https://github.com/JetBrains) | `CommanderTvis.JetBrainsThinkRail.Desktop` | x64 |
 | [SharpRail (nightly)](https://github.com/CommanderTvis/sharprail) | [CommanderTvis](https://github.com/CommanderTvis) | `CommanderTvis.SharpRail` | x64 |
 
 ## Add the source
@@ -42,42 +40,13 @@ Open a new terminal after installing the CLI if `thinkrail` is not yet on PATH. 
 
 ## ThinkRail from JetBrains (stable)
 
-Unmodified stable releases of [JetBrains/thinkrail](https://github.com/JetBrains/thinkrail), linked from their GitHub release with its published checksums. Windows x64 only; JetBrains publishes no Windows ARM64 build. The CLI is available as `jetbrains-thinkrail` so it does not collide with the fork's `thinkrail`. The package version is the JetBrains release version and advances when a new stable release is published.
+This source no longer carries JetBrains' stable releases. The CLI is in the default `winget` source as `JetBrains.ThinkRailCLI`. If you installed `CommanderTvis.JetBrainsThinkRail` or `CommanderTvis.JetBrainsThinkRail.Desktop` from here, they will not receive updates; uninstall them and switch:
 
 ```powershell
-# CLI
-winget install --id CommanderTvis.JetBrainsThinkRail --exact --source thinkrail --scope user
-winget upgrade --id CommanderTvis.JetBrainsThinkRail --exact --source thinkrail
-winget uninstall --id CommanderTvis.JetBrainsThinkRail --exact --source thinkrail
-
-# Desktop — follow the installer prompts
-winget install --id CommanderTvis.JetBrainsThinkRail.Desktop --exact --source thinkrail --scope user --interactive
-winget upgrade --id CommanderTvis.JetBrainsThinkRail.Desktop --exact --source thinkrail --interactive
-winget uninstall --id CommanderTvis.JetBrainsThinkRail.Desktop --exact --source thinkrail
+winget uninstall --id CommanderTvis.JetBrainsThinkRail --exact
+winget uninstall --id CommanderTvis.JetBrainsThinkRail.Desktop --exact
+winget install --id JetBrains.ThinkRailCLI --exact --source winget
 ```
-
-### Verify the downloads
-
-The JetBrains packages link directly to JetBrains' GitHub release; this source only supplies metadata. To check that the file and the hash this source advertises are exactly what JetBrains published, run this in PowerShell (Windows PowerShell 5.1 or PowerShell 7):
-
-```powershell
-$id = 'CommanderTvis.JetBrainsThinkRail'   # or CommanderTvis.JetBrainsThinkRail.Desktop
-$version = (Invoke-RestMethod "https://winget-thinkrail.vercel.app/packageManifests/$id").Data.Versions[0]
-$installer = $version.Installers[0]
-$file = Split-Path $installer.InstallerUrl -Leaf
-if (-not $installer.InstallerUrl.StartsWith('https://github.com/JetBrains/thinkrail/releases/download/')) { throw 'Not a JetBrains download URL' }
-$path = Join-Path $env:TEMP $file
-Invoke-WebRequest $installer.InstallerUrl -OutFile $path
-$actual = (Get-FileHash $path -Algorithm SHA256).Hash
-$release = Invoke-RestMethod "https://api.github.com/repos/JetBrains/thinkrail/releases/tags/v$($version.PackageVersion)"
-$official = ($release.assets | Where-Object name -eq $file).digest -replace '^sha256:', ''
-"Downloaded:     $actual"
-"Source says:    $($installer.InstallerSha256)"
-"JetBrains says: $official"
-if ($actual -eq $installer.InstallerSha256 -and $actual -eq $official) { 'OK: matches JetBrains' } else { 'MISMATCH: do not install' }
-```
-
-The three hashes must agree. The comparison is case-insensitive in PowerShell. The same SHA256SUMS used for the manifest is attached to each nightly release here as `jetbrains.sha256`. JetBrains does not publish signatures or build attestations, so this proves the bytes match their release, not who built them.
 
 ## SharpRail (nightly)
 
