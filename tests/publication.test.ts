@@ -37,49 +37,55 @@ test("missing state is distinct from API failures and corrupt adoption state", a
   ).rejects.toThrow();
   expect(() => parsePublication({ ...state, version: "latest" })).toThrow();
   expect(() => parsePublication({ ...state, sourceSha: "bad" })).toThrow();
+  const digest = { ...state, sourceSha: "a".repeat(64) };
+  expect(parsePublication(digest)).toEqual(digest);
 });
 
 test("deployment refuses empty, mixed-version, and duplicate-package catalogs", () => {
-  const catalog = [
-    "CommanderTvis.ThinkRail",
-    "CommanderTvis.ThinkRail.Desktop",
-  ].map((PackageIdentifier) => ({
-    PackageIdentifier,
-    Versions: [
-      {
-        PackageVersion: state.version,
-        DefaultLocale: {
-          PackageLocale: "en-US",
-          Publisher: "CommanderTvis",
-          PackageName: "ThinkRail",
-          License: "Apache-2.0",
-          ShortDescription: "Nightly",
+  const catalog = ["CommanderTvis.ThinkRail", "CommanderTvis.SharpRail"].map(
+    (PackageIdentifier) => ({
+      PackageIdentifier,
+      Versions: [
+        {
+          PackageVersion: state.version,
+          DefaultLocale: {
+            PackageLocale: "en-US",
+            Publisher: "CommanderTvis",
+            PackageName: "ThinkRail",
+            License: "Apache-2.0",
+            ShortDescription: "Nightly",
+          },
+          Installers: [],
         },
-        Installers: [],
-      },
-    ],
-  }));
+      ],
+    }),
+  );
   expect(validateCatalog(catalog, state.version)).toEqual(catalog);
+  const sharprail = catalog.slice(1);
+  expect(validateCatalog(sharprail, state.version)).toEqual(sharprail);
   expect(() => validateCatalog([], state.version)).toThrow();
+  expect(() => validateCatalog(catalog.slice(0, 1), state.version)).toThrow();
   expect(() =>
-    validateCatalog([catalog[0], catalog[0]], state.version),
+    validateCatalog([...sharprail, ...sharprail], state.version),
   ).toThrow();
   expect(() =>
     validateCatalog(catalog, "0.0.0-nightly.20261007000000"),
   ).toThrow();
 });
 
-test("publication advances only after verification and feed publication without Git writes", async () => {
+test("publication advances only after the Windows gate and public verification without Git writes", async () => {
   const workflow = await Bun.file(
     new URL("../.github/workflows/nightly.yml", import.meta.url),
   ).text();
   expect(workflow.indexOf("publication.ts adopt")).toBeGreaterThan(
-    workflow.indexOf("--clobber artifacts/canary-win-x64-update.json"),
+    workflow.indexOf("needs: [check, validate]"),
   );
   expect(
     workflow.indexOf("Verify the public source before adoption"),
   ).toBeLessThan(workflow.indexOf("publication.ts adopt"));
   expect(workflow).not.toMatch(/git (?:add|commit|push)|nightly\.sha/);
-  expect(workflow).toContain('publication.ts load "$env:GITHUB_REPOSITORY"');
+  expect(workflow).toContain(
+    'echo "$SOURCE_SHA  artifacts/sharprail-windows-x64.zip" | sha256sum --check',
+  );
   expect(workflow).toContain("artifacts/catalog.json artifacts/source.sha");
 });

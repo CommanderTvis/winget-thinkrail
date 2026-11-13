@@ -4,6 +4,7 @@ import type { PackageManifest } from "../src/catalog";
 
 export interface Publication {
   version: string;
+  /** SHA256 of the mirrored SharpRail zip; states adopted while the ThinkRail fork was built hold its 40-hex commit. */
   sourceSha: string;
 }
 
@@ -12,7 +13,7 @@ export function parsePublication(value: unknown): Publication {
   if (
     !state ||
     !/^0\.0\.0-nightly\.\d{14}$/.test(state.version) ||
-    !/^[0-9a-f]{40}$/.test(state.sourceSha)
+    !/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(state.sourceSha)
   ) {
     throw new Error("Invalid publication state");
   }
@@ -23,11 +24,12 @@ export function validateCatalog(value: unknown, version: string) {
   const catalog = value as PackageManifest[];
   if (
     !Array.isArray(catalog) ||
-    catalog.length < 2 ||
+    catalog.length < 1 ||
     catalog.length > 5 ||
-    !["CommanderTvis.ThinkRail", "CommanderTvis.ThinkRail.Desktop"].every(
-      (id) =>
-        catalog.filter((pkg) => pkg.PackageIdentifier === id).length === 1,
+    new Set(catalog.map((pkg) => pkg.PackageIdentifier)).size !==
+      catalog.length ||
+    !catalog.some(
+      (pkg) => pkg.PackageIdentifier === "CommanderTvis.SharpRail",
     ) ||
     catalog.some(
       (pkg) =>
@@ -60,12 +62,8 @@ function gh(args: string[]) {
 }
 
 if (import.meta.main) {
-  const [
-    command,
-    repository = "CommanderTvis/winget-thinkrail",
-    version,
-    sourceSha,
-  ] = process.argv.slice(2);
+  const [command, repository = "CommanderTvis/winget", version, sourceSha] =
+    process.argv.slice(2);
   const request = (url: string) =>
     fetch(url, {
       headers: process.env.GH_TOKEN
@@ -79,56 +77,6 @@ if (import.meta.main) {
   } else if (command === "require-catalog") {
     const catalog = await Bun.file("catalog.json").json();
     validateCatalog(catalog, catalog[0]?.Versions[0]?.PackageVersion ?? "");
-  } else if (command === "migrate") {
-    await mkdir("artifacts", { recursive: true });
-    if (!(await readPublication(repository, request))) {
-      const ref = "03b9ebf1ca8170b199278de4dcd9ed5f60a72dcb";
-      const legacy = (path: string) =>
-        Buffer.from(
-          JSON.parse(
-            gh(["api", `repos/${repository}/contents/${path}?ref=${ref}`]),
-          ).content,
-          "base64",
-        ).toString("utf8");
-      const catalog = JSON.parse(legacy("catalog.json"));
-      const state = parsePublication({
-        version: catalog[0]?.Versions[0]?.PackageVersion,
-        sourceSha: legacy("nightly.sha").trim(),
-      });
-      validateCatalog(catalog, state.version);
-      await writeFile("catalog.json", `${JSON.stringify(catalog, null, 2)}\n`);
-      await writeFile("artifacts/source.sha", `${state.sourceSha}\n`);
-      const release = JSON.parse(
-        gh([
-          "release",
-          "view",
-          `v${state.version}`,
-          "--repo",
-          repository,
-          "--json",
-          "assets",
-        ]),
-      );
-      for (const name of ["catalog.json", "source.sha"]) {
-        if (
-          !release.assets.some((asset: { name: string }) => asset.name === name)
-        ) {
-          gh([
-            "release",
-            "upload",
-            `v${state.version}`,
-            "--repo",
-            repository,
-            name === "catalog.json" ? name : `artifacts/${name}`,
-          ]);
-        }
-      }
-      execFileSync(
-        process.execPath,
-        [import.meta.path, "adopt", repository, state.version, state.sourceSha],
-        { stdio: "inherit" },
-      );
-    }
   } else if (command === "adopt") {
     const state = parsePublication({ version, sourceSha });
     validateCatalog(await Bun.file("catalog.json").json(), state.version);
@@ -218,7 +166,7 @@ if (import.meta.main) {
     }
   } else {
     throw new Error(
-      "Usage: publication.ts <init|require-catalog|sha|load|adopt|migrate> [owner/repo] [version sourceSha]",
+      "Usage: publication.ts <init|require-catalog|sha|load|adopt> [owner/repo] [version sourceSha]",
     );
   }
 }

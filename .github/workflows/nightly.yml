@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       force:
-        description: Rebuild and republish even when the fork commit is already adopted
+        description: Republish even when the SharpRail zip is already adopted
         type: boolean
         default: false
 
@@ -18,15 +18,13 @@ permissions:
   contents: read
 
 env:
-  SOURCE_REPO: CommanderTvis/thinkrail
-  SOURCE_BRANCH: claude-code-integration-plugin-api
+  SOURCE_REPO: CommanderTvis/tereditor
+  SOURCE_ASSET: SharpRail-nightly-win-x64.zip
 
 jobs:
   check:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     outputs:
       sha: ${{ steps.compare.outputs.sha }}
       changed: ${{ steps.compare.outputs.changed }}
@@ -38,10 +36,6 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: '1.4.2'
-      - name: Migrate the previously adopted Git snapshot once
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bun scripts/publication.ts migrate "$GITHUB_REPOSITORY"
       - id: compare
         env:
           GH_TOKEN: ${{ github.token }}
@@ -49,8 +43,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sha=$(git ls-remote "https://github.com/$SOURCE_REPO.git" "refs/heads/$SOURCE_BRANCH" | cut -f1)
-          [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::Invalid source head'; exit 1; }
+          sha=$(gh api "repos/$SOURCE_REPO/releases/tags/nightly" --jq ".assets[] | select(.name == \"$SOURCE_ASSET\") | .digest | sub(\"^sha256:\"; \"\")")
+          [[ "$sha" =~ ^[0-9a-f]{64}$ ]] || { echo '::error::Invalid SharpRail asset digest'; exit 1; }
           last=$(bun scripts/publication.ts sha "$GITHUB_REPOSITORY")
           {
             echo "sha=$sha"
@@ -58,88 +52,9 @@ jobs:
             echo "version=0.0.0-nightly.$(date -u +%Y%m%d%H%M%S)"
           } >> "$GITHUB_OUTPUT"
 
-  build:
+  release:
     needs: check
     if: needs.check.outputs.changed == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: x64
-            runner: windows-latest
-          - arch: arm64
-            runner: windows-11-arm
-    runs-on: ${{ matrix.runner }}
-    env:
-      VERSION: ${{ needs.check.outputs.version }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: ${{ env.SOURCE_REPO }}
-          ref: ${{ needs.check.outputs.sha }}
-          persist-credentials: false
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          path: distribution
-          persist-credentials: false
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version-file: package.json
-      - run: bun install --frozen-lockfile
-      - name: Disable release analytics in the disposable fork checkout
-        run: bun distribution/scripts/disable-analytics.ts
-      - name: Point the desktop updater at this fork distribution
-        if: matrix.arch == 'x64'
-        shell: pwsh
-        run: |
-          $path = 'apps/desktop/electrobun.config.ts'
-          $text = Get-Content $path -Raw
-          $upstream = 'https://github.com/JetBrains/thinkrail/releases/download/desktop-updates'
-          if (-not $text.Contains($upstream)) { throw 'Upstream updater contract changed' }
-          $text.Replace($upstream, "https://github.com/$env:GITHUB_REPOSITORY/releases/download/desktop-updates") | Set-Content $path -Encoding utf8NoBOM
-      - id: native
-        if: matrix.arch == 'x64'
-        uses: ./.github/actions/build-binary
-        with:
-          version: ${{ env.VERSION }}
-          channel: nightly
-          target: bun-windows-x64
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: matrix.arch == 'arm64'
-        with:
-          repository: sursaone/bun-pty
-          ref: 14ac2cabec8484d0f02234ef300b2b46c4b908fe # bun-pty 0.5.1 npm gitHead
-          path: native-pty
-          persist-credentials: false
-      - name: Build and smoke native ARM64 CLI
-        if: matrix.arch == 'arm64'
-        shell: pwsh
-        run: ./distribution/scripts/build-arm64.ps1 -Version $env:VERSION -PtySource ./native-pty
-      - name: Collect release artifacts
-        shell: pwsh
-        env:
-          ARCH: ${{ matrix.arch }}
-          DESKTOP: ${{ steps.native.outputs.desktop-artifact-path }}
-          MANIFEST: ${{ steps.native.outputs.desktop-update-manifest-path }}
-          ARCHIVE: ${{ steps.native.outputs.desktop-update-archive-path }}
-        run: |
-          New-Item publish -ItemType Directory -Force | Out-Null
-          Copy-Item "apps/cli/dist/thinkrail-windows-$env:ARCH.exe" publish
-          if ($env:ARCH -eq 'x64') {
-            Copy-Item $env:DESKTOP, $env:MANIFEST, $env:ARCHIVE publish
-            Expand-Archive $env:DESKTOP -DestinationPath installer-inspection
-            if (-not (Test-Path installer-inspection/ThinkRail-Setup-canary.exe)) { throw 'Unexpected setup ZIP layout' }
-            if (-not (Test-Path installer-inspection/.installer)) { throw 'Missing adjacent installer payload' }
-          }
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: nightly-${{ matrix.arch }}
-          path: publish/*
-          if-no-files-found: error
-          compression-level: 0
-
-  release:
-    needs: [check, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -156,19 +71,13 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: '1.4.2'
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: nightly-x64
-          path: artifacts
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: nightly-arm64
-          path: artifacts
       - name: Mirror the SharpRail nightly into this immutable release
         run: |
           set -euo pipefail
-          gh release download nightly --repo CommanderTvis/sharprail \
-            --pattern SharpRail-nightly-win-x64.zip --output artifacts/sharprail-windows-x64.zip
+          mkdir -p artifacts
+          gh release download nightly --repo "$SOURCE_REPO" \
+            --pattern "$SOURCE_ASSET" --output artifacts/sharprail-windows-x64.zip
+          echo "$SOURCE_SHA  artifacts/sharprail-windows-x64.zip" | sha256sum --check
           unzip -l artifacts/sharprail-windows-x64.zip | grep -Eq 'client[/\\]SharpRail\.UI\.exe$'
       - run: bun install --frozen-lockfile
       - run: bun run check
@@ -177,16 +86,16 @@ jobs:
           set -euo pipefail
           bun scripts/catalog.ts "$GITHUB_REPOSITORY" "$VERSION" artifacts artifacts/catalog.json
           echo "$SOURCE_SHA" > artifacts/source.sha
-          (cd artifacts && sha256sum thinkrail-windows-*.exe thinkrail-desktop-windows-x64.zip sharprail-windows-x64.zip > SHA256SUMS)
+          (cd artifacts && sha256sum sharprail-windows-x64.zip > SHA256SUMS)
       - id: release
         name: Publish immutable downloads for installation checks
         run: |
           set -euo pipefail
           gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
-            --title "$VERSION" --notes "Unsigned nightly built from $SOURCE_REPO@$SOURCE_SHA."
+            --title "$VERSION" --notes "Unsigned SharpRail nightly mirrored from $SOURCE_REPO ($SOURCE_ASSET, sha256 $SOURCE_SHA)."
           echo 'created=true' >> "$GITHUB_OUTPUT"
           gh release upload "v$VERSION" --repo "$GITHUB_REPOSITORY" \
-            artifacts/thinkrail-windows-*.exe artifacts/thinkrail-desktop-windows-x64.zip artifacts/sharprail-windows-x64.zip artifacts/SHA256SUMS artifacts/catalog.json artifacts/source.sha
+            artifacts/sharprail-windows-x64.zip artifacts/SHA256SUMS artifacts/catalog.json artifacts/source.sha
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: candidate
@@ -195,15 +104,7 @@ jobs:
 
   validate:
     needs: [check, release]
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: x64
-            runner: windows-latest
-          - arch: arm64
-            runner: windows-11-arm
-    runs-on: ${{ matrix.runner }}
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -215,20 +116,15 @@ jobs:
         with:
           name: candidate
           path: artifacts
-      - name: Download the adopted catalog for upgrade qualification
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bun scripts/publication.ts load "$env:GITHUB_REPOSITORY"
-      - name: Verify metadata and CLI installation through WinGet
+      - name: Verify SharpRail metadata through WinGet
         shell: pwsh
         env:
           VERSION: ${{ needs.check.outputs.version }}
-          ARCH: ${{ matrix.arch }}
-        run: ./scripts/test-install.ps1 -Version $env:VERSION -Architecture $env:ARCH
+        run: ./scripts/test-install.ps1 -Version $env:VERSION
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
-          name: install-logs-${{ matrix.arch }}
+          name: install-logs
           path: |
             .smoke/*.log
             .smoke/*.err
@@ -259,14 +155,6 @@ jobs:
           bun-version: '1.4.2'
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: nightly-x64
-          path: artifacts
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: nightly-arm64
-          path: artifacts
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
           name: candidate
           path: artifacts
       - run: bun install --frozen-lockfile
@@ -281,16 +169,6 @@ jobs:
         run: bun run deploy --token "$VERCEL_TOKEN"
       - name: Verify the public source before adoption
         run: bun scripts/verify-source.ts https://winget-thinkrail.vercel.app
-      - name: Publish archive before desktop update manifest
-        run: |
-          set -euo pipefail
-          bun scripts/update-feed.ts artifacts "$VERSION"
-          gh release view desktop-updates --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||
-            gh release create desktop-updates --repo "$GITHUB_REPOSITORY" --prerelease \
-              --title 'Desktop update feed' --notes 'Electrobun canary feed for the CommanderTvis fork.'
-          gh release upload desktop-updates --repo "$GITHUB_REPOSITORY" \
-            "artifacts/canary-win-x64-ThinkRail-canary-$VERSION.tar.zst"
-          gh release upload desktop-updates --repo "$GITHUB_REPOSITORY" --clobber artifacts/canary-win-x64-update.json
       - name: Adopt the verified nightly in Releases
         run: bun scripts/publication.ts adopt "$GITHUB_REPOSITORY" "$VERSION" "$SOURCE_SHA"
 

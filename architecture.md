@@ -17,7 +17,7 @@ at the root serve the generated static installation page with its security heade
 Other requests retain REST method, body-size, version, and query validation.
 
 Before switching nightly publication, verify the deployed public hostname,
-information, search, both package manifests, invalid requests, and static page.
+information, search, every package manifest, invalid requests, and static page.
 Configure the project's WAF rate limiter to return 429 before function execution;
 browser challenges must not gate WinGet. Keep qualification ahead of production
 deployment and do not enable automatic Git production deployments that could
@@ -31,18 +31,16 @@ not promise quota isolation across other Vercel projects.
 ```mermaid
 flowchart LR
   subgraph GitHub["GitHub"]
-    fork["CommanderTvis/thinkrail<br/>claude-code-integration-plugin-api"]
-    repo["CommanderTvis/winget-thinkrail<br/>code + workflows"]
+    upstream["CommanderTvis/tereditor<br/>nightly release · SharpRail-nightly-win-x64.zip"]
+    repo["CommanderTvis/winget<br/>code + workflows"]
     subgraph CI["GitHub Actions · daily 03:00 UTC / manual"]
-      compare["Compare fork commit with adopted source SHA"]
-      x64["Windows x64<br/>CLI + desktop build and smoke"]
-      arm64["Windows ARM64<br/>native PTY + CLI build and smoke"]
-      gates["Windows x64 / ARM64<br/>CLI WinGet install and upgrade gates<br/>desktop metadata/search/show only on x64<br/>candidate source on localhost HTTPS"]
+      compare["Compare zip SHA256 with adopted digest"]
+      mirror["Download, verify digest, generate catalog"]
+      gates["Windows x64<br/>WinGet metadata/search/show gate<br/>candidate source on localhost HTTPS"]
       publish["Publish verified nightly"]
     end
-    releases["Versioned prereleases<br/>installers + SHA256SUMS + catalog + source SHA"]
-    state["publication-state release<br/>adopted version + source SHA"]
-    feed["desktop-updates release<br/>immutable archives + update manifest"]
+    releases["Versioned prereleases<br/>mirrored zip + SHA256SUMS + catalog + source digest"]
+    state["publication-state release<br/>adopted version + source digest"]
     secrets["Actions Secrets<br/>Vercel organization/project IDs + API token"]
   end
 
@@ -52,30 +50,26 @@ flowchart LR
 
   subgraph Windows["Users' Windows devices"]
     winget["WinGet"]
-    desktop["ThinkRail desktop · x64"]
   end
 
-  fork --> compare
+  upstream --> compare
   repo --> compare
   state --> compare
-  compare -->|Changed commit| x64
-  compare -->|Changed commit| arm64
-  x64 --> releases
-  arm64 --> releases
-  releases -->|Candidate downloads| gates
-  gates -->|Both architectures pass| publish
+  compare -->|Changed digest| mirror
+  upstream --> mirror
+  mirror --> releases
+  releases -->|Candidate catalog| gates
+  gates -->|Pass| publish
   secrets -.->|Deployment credentials only| publish
   publish -->|Deploy code + catalog| source
-  publish -->|Archive before manifest| feed
   publish -->|Advance adopted release pointer| state
   winget -->|HTTPS metadata requests| source
   winget -->|Direct installer downloads| releases
-  desktop -->|In-app update checks and downloads| feed
 ```
 
-Vercel serves metadata and the installation page; binary downloads go directly to GitHub. Native
-Windows gates precede publication to the production source and desktop update feed.
-Deployment credentials stay in CI and are not bound to the Function.
+Vercel serves metadata and the installation page; binary downloads go directly to GitHub.
+The Windows gate precedes publication to the production source. Deployment credentials
+stay in CI and are not bound to the Function.
 
 ## Boundaries
 
@@ -102,43 +96,36 @@ multi-key publication.
 
 GitHub Actions writes immutable `catalog.json` and `source.sha` assets to each nightly
 release. The `publication-state` release body is a single JSON adoption pointer
-containing `version` and `sourceSha`; it advances only after public-source verification
-and desktop feed publication. Nightly publication never commits or pushes to a branch.
+containing `version` and `sourceSha`; it advances only after public-source verification.
+`sourceSha` is the SHA256 of the mirrored SharpRail zip. States adopted while the
+ThinkRail fork was built hold a 40-hex fork commit instead; the parser accepts both, and
+an old commit never equals a zip digest, so the first SharpRail-only run publishes.
+Nightly publication never commits or pushes to a branch.
 An ignored local `catalog.json` is the build input; it is bundled into Vercel.
 Local checks initialize a missing catalog to an empty bootstrap; deployment refuses
-an empty catalog. API errors and corrupt adoption state stop publication; outside
-the one-time migration, absent state also stops comparisons and catalog downloads.
-Upgrade qualification downloads the previous adopted catalog from its exact release.
-All targets build the same resolved fork commit and timestamped release identity.
-The x64 job invokes the fork's composite build action. The ARM64 job invokes its
-existing CLI version-stamping, web-build, compile, and smoke commands without
-attempting an unsupported Electrobun ARM64 desktop build. No sibling checkout is
-modified by this repository's development work.
-
-The fork currently pins `bun-pty` 0.5.1, whose Windows DLLs are x64-only. ARM64 CI
-builds the DLL from that package's immutable source commit with its Cargo lockfile
-and replaces only the dependency binaries (both ARM64 and generic DLL names) in the disposable checkout before compiling
-the CLI. A dependency-version mismatch fails closed and requires reviewing the new
-package rather than silently mixing native code versions. Native ARM64 smoke is a
-release gate, not an assumed consequence of successful cross-compilation.
-Dependency resolution is anchored to the absolute server workspace path using Bun's
-resolver: resolving from the repository root can miss isolated workspace dependencies
-or select a cached package rather than the installed one. A workspace-only fixture
-checks the exact build-script expression to prevent that regression.
+an empty catalog. API errors, corrupt adoption state, and absent state stop
+comparisons and catalog downloads.
 
 The source implements Microsoft's REST 1.4 contract, the first supporting portable
-and nested ZIP installers. Desktop metadata preserves Electrobun's setup ZIP and
-adjacent payload. Installation is interactive: Electrobun 2.0.1 has no silent-install
-switch, and `--quiet` must never be passed to setup as an installation switch.
+and nested ZIP installers.
 
 ## SharpRail package
 
-`CommanderTvis.SharpRail` is x64-only. The release job copies the zip from
-`CommanderTvis/sharprail`'s mutable `nightly` release into the versioned prerelease as
-`sharprail-windows-x64.zip`, so the catalog's URL and SHA256 stay immutable. It is a nested
-portable zip (`client\SharpRail.UI.exe`) without a command alias. It builds nothing here, is
-not WinGet-install-qualified on runners, and does not gate publication; the adopted-catalog
-validator accepts a catalog with or without it so older adopted nightlies stay valid.
+`CommanderTvis.SharpRail` is x64-only. The check job reads the SHA256 digest GitHub
+reports for `SharpRail-nightly-win-x64.zip` in `CommanderTvis/tereditor`'s mutable
+`nightly` release. The release job downloads that asset, refuses it unless its bytes
+match the checked digest, and copies it into the versioned prerelease as
+`sharprail-windows-x64.zip`, so the catalog's URL and SHA256 stay immutable. It is a
+nested portable zip (`client\SharpRail.UI.exe`) without a command alias. Nothing is
+built here. The adopted-catalog validator requires exactly one SharpRail package.
+
+## Dropped ThinkRail fork packages
+
+`CommanderTvis.ThinkRail` (x64/ARM64 CLI) and `CommanderTvis.ThinkRail.Desktop` were
+built here from `CommanderTvis/thinkrail` and are no longer published. Their last
+adopted catalog stays loadable because the validator still accepts extra packages that
+share the adopted version. The `desktop-updates` release that installed fork desktops
+poll is left frozen; nothing writes to it any more.
 
 ## Dropped JetBrains stable packages
 
@@ -151,39 +138,30 @@ before the removal stay loadable; drop that exemption once no adopted catalog ca
 ## Publication invariants
 
 Installer URLs identify an immutable GitHub prerelease and SHA256 checksums cover
-the published bytes. Both CLI architectures belong to one package identity; the
-desktop is a separate x64-only package. Empty initial metadata advertises no fake
-builds. Only the latest successfully adopted nightly is indexed; old releases remain
-available on GitHub.
+the published bytes. Empty initial metadata advertises no fake builds. Only the
+latest successfully adopted nightly is indexed; old releases remain available on
+GitHub.
 
 Windows qualification uses the candidate catalog before production publication.
-CLI WinGet installation and upgrade checks on x64 and ARM64 are hard gates, as are
-the x64 desktop upstream composite build/native installer smoke and desktop WinGet
-metadata/search/show validation on x64. Automated WinGet verification must not
-launch desktop setup or attempt desktop installation or upgrade: unsigned setup
-triggers SmartScreen requiring user interaction. Both packages still publish when
-these gates pass; a manual desktop WinGet check remains unverified and non-blocking.
-A source build, checksum, manifest, or required qualification failure must not
-advance the production catalog or source marker. Publication across GitHub and
-Vercel is not transactional: once a release may have been adopted, cleanup must
-retain its downloads rather than break installed catalogs. Desktop feed archives
-are uploaded before the corresponding update manifest.
+WinGet metadata/search/show validation of SharpRail on x64 is a hard gate.
+Automated verification does not install SharpRail. A download, digest, manifest, or
+required qualification failure must not advance the production catalog or source
+marker. Publication across GitHub and Vercel is not transactional: once a release may
+have been adopted, cleanup must retain its downloads rather than break installed
+catalogs.
 
 ## Trust
 
-These fork nightlies are unsigned. Checksums protect download integrity but do not
+These nightlies are unsigned. Checksums protect download integrity but do not
 provide publisher signing or bypass Windows SmartScreen. Source addition is an
-explicit trust decision. This distribution does not inherit JetBrains' private
-signing pipeline. Automation must not bypass Windows security or simulate clicking
-“Run anyway”. Runtime source endpoints never mutate data.
+explicit trust decision. Automation must not bypass Windows security or simulate
+clicking “Run anyway”. Runtime source endpoints never mutate data.
 
 ## Verification boundary
 
-Protocol and publication helpers have local tests. Actual CLI WinGet installation
-and upgrade and native CLI smoke checks belong on the corresponding Windows runners.
-Desktop qualification covers the x64 upstream composite build/native installer smoke
-and WinGet metadata/search/show validation, not desktop WinGet installation or upgrade.
-A macOS check cannot establish Windows installation success. Live deployment and the
+Protocol and publication helpers have local tests. WinGet metadata/search/show checks
+belong on a Windows runner; they do not establish SharpRail installation or upgrade
+success. A macOS check cannot establish Windows behavior. Live deployment and the
 first hosted nightly remain operator actions unless separately authorized.
 
 ## Deployment
@@ -213,20 +191,15 @@ limit. Vercel generates `dist/` during its build rather than uploading local out
    `VERCEL_TOKEN`. Scope the API token to the owning team and, where supported,
    this project. Never store the token in source files. Nightly CI passes it
    explicitly to the CLI, deploys after qualification, then checks the public
-   source before publishing the desktop feed and adopting metadata.
-   Windows releases disable analytics: both architectures stamp an empty PostHog
-   key, which makes the fork's analytics initializer return before creating a sink
-   or recording attribution. CI adapts the upstream action in its disposable fork
-   checkout to allow that empty key. No PostHog account or secret is needed.
+   source before adopting metadata.
 5. The project's active WAF rule limits all paths to 120 requests per IP per
    60-second fixed window and returns 429 when exceeded. Automatic DDoS
    mitigations are active; Attack Mode and browser bot challenges are off so
    WinGet remains usable. Review changes with `vercel firewall diff` and publish
    them with `vercel firewall publish`. NAT users share the per-IP allowance.
 6. Run the hosted Nightly workflow after the changed workflow reaches main.
-   Existing native CLI x64/ARM64 qualification and desktop x64 metadata/build
-   gates remain mandatory. Desktop WinGet installation remains manual and
-   unverified.
+   The x64 WinGet metadata gate remains mandatory. SharpRail WinGet installation
+   remains manual and unverified.
 
 [WAF-mitigated traffic](https://vercel.com/docs/vercel-firewall/vercel-waf/usage-and-pricing)
 does not consume CDN requests or fast data transfer. Accepted requests still
@@ -258,43 +231,33 @@ not a real-time notification guarantee or an automatic shutdown. It does not
 measure CPU or transfer allowance. Vercel's separate built-in usage-anomaly
 alerts require a paid plan; its standard quota notifications are independent.
 
-Nightlies run daily at 03:00 UTC or manually, skip unchanged fork commits by
-comparing against `sourceSha` in the `publication-state` release body, and use
-`0.0.0-nightly.<UTC YYYYMMDDHHmmss>` versions. Change `scripts/catalog.ts`,
-not generated catalog entries.
+Nightlies run daily at 03:00 UTC or manually, skip an unchanged SharpRail zip by
+comparing its SHA256 against `sourceSha` in the `publication-state` release body,
+and use `0.0.0-nightly.<UTC YYYYMMDDHHmmss>` versions. A manual dispatch with
+`force=true` republishes anyway. Change `scripts/catalog.ts`, not generated catalog
+entries.
 
-Publication order is immutable prerelease downloads, candidate qualification gates,
-Vercel deployment and public-source verification, version-qualified desktop archive, desktop update manifest,
-then an update to the `publication-state` release body. The desktop feed lives
-under the `desktop-updates` release. Its manifest changes only after the new archive
-is available.
+Publication order is the immutable prerelease download, the candidate qualification
+gate, Vercel deployment and public-source verification, then an update to the
+`publication-state` release body.
 
-On build or required qualification failure, production stays unchanged and cleanup removes
-the unadopted prerelease. After a partial publication failure, retain downloads,
-fix the cause, and start a new workflow run. The unchanged source marker makes it
-retry. Do not rerun only failed installation jobs after cleanup has removed their
-candidate downloads.
+On download, digest, or required qualification failure, production stays unchanged
+and cleanup removes the unadopted prerelease. After a partial publication failure,
+retain downloads, fix the cause, and start a new workflow run. The unchanged adopted
+digest makes it retry. Do not
+rerun only the failed validation job after cleanup has removed its candidate downloads.
 
 For source-only fixes, use up-to-date `main` and run `bun run catalog:adopted`
 before deploying, outside an active nightly run. An old local catalog would
 roll back advertised packages; the deployment command rejects an empty catalog. Keep old release downloads even though WinGet indexes only the latest
 adopted nightly.
 
-### One-time migration from Git-held state
+### Publication state
 
-The first updated Nightly run seeds Releases from the previously adopted Git
-snapshot at commit `03b9ebf1ca8170b199278de4dcd9ed5f60a72dcb`. It uploads the
-existing catalog and source SHA to `v0.0.0-nightly.20261006095947` and initializes
-`publication-state`. Existing assets are checked rather than overwritten; a
-partial migration can be retried. This preserves the native upgrade baseline and
-avoids rebuilding an unchanged source. It never chooses the newest candidate.
-The migration is a no-op once publication state exists and never deploys.
-The check job needs Contents write permission for this one-time migration; no job
-has persisted checkout credentials or writes to a Git branch.
-
-The pointer is one release-body update, so readers cannot observe a catalog and SHA from different publications. A failed
-pointer update retains the prior state; a retry rebuilds because its SHA is unchanged.
-The state release is mutable and must not have release immutability enabled.
+The pointer is one release-body update, so readers cannot observe a catalog and digest
+from different publications. A failed pointer update retains the prior state. The state
+release is mutable and must not have release immutability enabled. No job has persisted
+checkout credentials or writes to a Git branch.
 
 ## Maintainer verification
 
@@ -311,10 +274,8 @@ bun run catalog:adopted # download adopted metadata for local inspection/deploym
 runners. Its HTTPS source uses an IPv4 loopback URL and a temporarily trusted
 certificate with the matching IP-address SAN, avoiding localhost IPv6 resolution
 against an IPv4-only listener. Readiness failures retain their underlying exception;
-certificate verification is never skipped. Automated desktop WinGet checks validate
-metadata/search/show only and never launch setup. Desktop native installer smoke
-remains the upstream composite build's hard gate; it does not establish desktop
-WinGet installation or upgrade success.
+certificate verification is never skipped. It validates SharpRail metadata, search,
+and show only, and never installs a package.
 
 When WinGet is unavailable, bootstrap pins the PowerShell module to `1.29.280` and
 requests GitHub release tag `v1.29.290` for the current runner user. The repair module

@@ -10,7 +10,7 @@ test("Source root serves an installation page while REST stays JSON", async () =
   const html = await response.text();
   expect(html).toContain('<html lang="en">');
   expect(html).toContain("winget source add --name thinkrail");
-  expect(html).toContain("--scope user --interactive");
+  expect(html).toContain("CommanderTvis.SharpRail");
   const info = await source.fetch(new Request("https://source/information"));
   expect(info.headers.get("Content-Type")).toContain("application/json");
   expect((await info.json()).Data.SourceIdentifier).toBe(
@@ -21,7 +21,7 @@ test("Source root serves an installation page while REST stays JSON", async () =
 test("page availability follows each bundled package and escapes version text", async () => {
   const catalog: PackageManifest[] = [
     {
-      PackageIdentifier: "CommanderTvis.ThinkRail",
+      PackageIdentifier: "CommanderTvis.SharpRail",
       Versions: [
         {
           PackageVersion: 'nightly.<script>"&',
@@ -40,14 +40,12 @@ test("page availability follows each bundled package and escapes version text", 
   const page = async (packages: PackageManifest[]) =>
     (await createSource(packages).fetch(new Request("https://source/"))).text();
   const empty = await page([]);
-  expect(empty.match(/Awaiting the first verified nightly/g)).toHaveLength(3);
+  expect(empty.match(/Awaiting the first verified nightly/g)).toHaveLength(1);
   expect(empty).not.toContain("Available ·");
   const published = await page(catalog);
   expect(published).toContain("Available · nightly.&#60;script&#62;&#34;&#38;");
   expect(published).not.toContain("<script>");
-  expect(published.match(/Awaiting the first verified nightly/g)).toHaveLength(
-    2,
-  );
+  expect(published).not.toContain("Awaiting the first verified nightly");
 });
 
 test("root supports HEAD, rejects writes, and keeps unknown paths as 404", async () => {

@@ -15,28 +15,11 @@ interface Row {
   architectures: string;
 }
 
-const fork = "https://github.com/CommanderTvis/thinkrail";
 const rows: Row[] = [
-  {
-    id: "CommanderTvis.ThinkRail",
-    name: "ThinkRail CLI (fork nightly)",
-    link: fork,
-    author: "CommanderTvis",
-    authorLink: "https://github.com/CommanderTvis",
-    architectures: "x64, ARM64",
-  },
-  {
-    id: "CommanderTvis.ThinkRail.Desktop",
-    name: "ThinkRail Desktop (fork nightly)",
-    link: fork,
-    author: "CommanderTvis",
-    authorLink: "https://github.com/CommanderTvis",
-    architectures: "x64",
-  },
   {
     id: "CommanderTvis.SharpRail",
     name: "SharpRail (nightly)",
-    link: "https://github.com/CommanderTvis/sharprail",
+    link: "https://github.com/CommanderTvis/tereditor",
     author: "CommanderTvis",
     authorLink: "https://github.com/CommanderTvis",
     architectures: "x64",
@@ -67,8 +50,8 @@ export function renderPage(catalog: PackageManifest[]): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="WinGet source for ThinkRail fork nightlies and SharpRail nightlies on Windows.">
-  <title>ThinkRail and SharpRail for Windows</title>
+  <meta name="description" content="WinGet source for SharpRail nightlies on Windows.">
+  <title>SharpRail for Windows</title>
   <style>
     pre { white-space: pre-wrap; overflow-wrap: anywhere; }
     code { overflow-wrap: anywhere; }
@@ -77,8 +60,8 @@ export function renderPage(catalog: PackageManifest[]): string {
 </head>
 <body>
   <main>
-    <h1>WinGet source for ThinkRail and SharpRail builds</h1>
-    <p>Install Windows builds through one WinGet source. Packages are grouped below; the catalogue shows the exact version currently published.</p>
+    <h1>WinGet source for SharpRail builds</h1>
+    <p>Install Windows builds through one WinGet source. The catalogue shows the exact version currently published.</p>
     <section aria-labelledby="catalogue-heading">
       <h2 id="catalogue-heading">Catalogue</h2>
       <div class="table" role="region" aria-label="Package catalogue" tabindex="0">
@@ -98,30 +81,9 @@ ${table}
       <pre tabindex="0" aria-label="Add the WinGet source"><code>winget source add --name thinkrail --arg https://winget-thinkrail.vercel.app --type Microsoft.Rest</code></pre>
       <p>If you previously added this source with a different URL, remove it with <code>winget source remove --name thinkrail</code>, then add the source above. Installed packages remain installed. Packages become installable once their verified build is available above.</p>
     </section>
-    <section aria-labelledby="fork-heading">
-      <h2 id="fork-heading">ThinkRail fork nightly</h2>
-      <p>Nightly builds of the <a href="${fork}">CommanderTvis ThinkRail fork</a>, branch <code>claude-code-integration-plugin-api</code>. Checked daily at 03:00 UTC and published when the fork changes. The CLI is available as <code>thinkrail</code>; the desktop requires Windows 11 or later.</p>
-      <pre tabindex="0" aria-label="ThinkRail fork commands"><code># CLI — WinGet selects your native architecture
-winget install --id CommanderTvis.ThinkRail --exact --source thinkrail --scope user
-winget upgrade --id CommanderTvis.ThinkRail --exact --source thinkrail
-winget uninstall --id CommanderTvis.ThinkRail --exact --source thinkrail
-
-# Desktop — x64 only; follow the installer prompts
-winget install --id CommanderTvis.ThinkRail.Desktop --exact --source thinkrail --scope user --interactive
-winget upgrade --id CommanderTvis.ThinkRail.Desktop --exact --source thinkrail --interactive
-winget uninstall --id CommanderTvis.ThinkRail.Desktop --exact --source thinkrail</code></pre>
-      <p>Open a new terminal after installing the CLI if <code>thinkrail</code> is not yet on PATH. Update the CLI through WinGet, not its built-in self-update command. The desktop also supports in-app updates from this fork’s nightly feed.</p>
-    </section>
-    <section aria-labelledby="jetbrains-heading">
-      <h2 id="jetbrains-heading">ThinkRail from JetBrains (stable)</h2>
-      <p>This source no longer carries JetBrains’ stable releases. The CLI is in the default <code>winget</code> source as <code>JetBrains.ThinkRailCLI</code>. If you installed <code>CommanderTvis.JetBrainsThinkRail</code> or <code>CommanderTvis.JetBrainsThinkRail.Desktop</code> from here, they will not receive updates; uninstall them and switch:</p>
-      <pre tabindex="0" aria-label="Switch to the JetBrains ThinkRail CLI"><code>winget uninstall --id CommanderTvis.JetBrainsThinkRail --exact
-winget uninstall --id CommanderTvis.JetBrainsThinkRail.Desktop --exact
-winget install --id JetBrains.ThinkRailCLI --exact --source winget</code></pre>
-    </section>
     <section aria-labelledby="sharprail-heading">
       <h2 id="sharprail-heading">SharpRail (nightly)</h2>
-      <p>The <a href="https://github.com/CommanderTvis/sharprail">CommanderTvis SharpRail</a> Avalonia prototype, Windows x64 only, mirrored from its <code>nightly</code> release. No command alias is added; launch <code>client\\SharpRail.UI.exe</code> from the install folder. This package is not installation-tested on Windows runners, and its WinGet portable-zip install is unverified.</p>
+      <p>The <a href="https://github.com/CommanderTvis/tereditor">CommanderTvis SharpRail</a> Avalonia prototype, Windows x64 only, mirrored from its <code>nightly</code> release and published when that build changes. No command alias is added; launch <code>client\\SharpRail.UI.exe</code> from the install folder. Publication checks its WinGet metadata on a Windows runner, but its WinGet portable-zip install is not tested there.</p>
       <pre tabindex="0" aria-label="SharpRail commands"><code>winget install --id CommanderTvis.SharpRail --exact --source thinkrail --scope user
 winget upgrade --id CommanderTvis.SharpRail --exact --source thinkrail
 winget uninstall --id CommanderTvis.SharpRail --exact --source thinkrail</code></pre>
@@ -129,16 +91,14 @@ winget uninstall --id CommanderTvis.SharpRail --exact --source thinkrail</code><
     <section aria-labelledby="remove-heading">
       <h2 id="remove-heading">Remove the source</h2>
       <pre tabindex="0" aria-label="Remove the WinGet source"><code>winget source remove --name thinkrail</code></pre>
-      <p>Removing the source alone does not uninstall any package or disable desktop in-app updates.</p>
+      <p>Removing the source alone does not uninstall any package.</p>
     </section>
     <section aria-labelledby="notice-heading">
       <h2 id="notice-heading">Before installing</h2>
       <p>These are unofficial, unsigned builds. Windows SmartScreen or organizational policy may block them. Download checksums verify integrity, not publisher identity; this distribution does not disable Windows security protections.</p>
-      <p>Desktop installation is interactive; silent installation is not supported. Do not pass <code>--quiet</code> to a desktop setup executable: it is an uninstall command.</p>
-      <p>The desktop shares its canary installation identity with other ThinkRail canary distributions. Back up your data before switching distributions; do not expect them to coexist side by side.</p>
     </section>
   </main>
-  <footer>CommanderTvis fork · <a href="https://github.com/CommanderTvis/winget-thinkrail/releases">Release archives</a> · <a href="https://github.com/CommanderTvis/winget-thinkrail#readme">Installation guide</a></footer>
+  <footer>CommanderTvis · <a href="https://github.com/CommanderTvis/winget/releases">Release archives</a> · <a href="https://github.com/CommanderTvis/winget#readme">Installation guide</a></footer>
 </body>
 </html>`;
 }

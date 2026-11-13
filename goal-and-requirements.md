@@ -2,56 +2,48 @@
 id: winget-nightlies
 type: goal-and-requirements
 status: draft
-title: ThinkRail fork Windows nightlies
+title: SharpRail Windows nightlies
 ---
 
 ## Goal
 
-Install and upgrade nightly Windows builds of `CommanderTvis/thinkrail`, branch
-`claude-code-integration-plugin-api`, through a dedicated WinGet source hosted on
-Vercel Hobby using its provided hostname, without a personal domain.
+Install and upgrade nightly Windows builds of SharpRail, published by
+`CommanderTvis/tereditor` in its `nightly` release, through a dedicated WinGet source
+hosted on Vercel Hobby using its provided hostname, without a personal domain.
 
 ## Scope
 
-Publish native x64 and ARM64 CLI packages and an x64-only desktop package. Do not
-publish an ARM64 desktop installer or label an x64 binary as ARM64.
+Publish one x64 package, `CommanderTvis.SharpRail`, mirrored from the
+`SharpRail-nightly-win-x64.zip` asset. This repository builds nothing.
 
-Run daily 03:00 UTC and manual builds, source-commit comparison against the adopted
-source SHA in GitHub Releases, timestamped nightly versions, reuse of the fork's
-build tooling, GitHub prereleases with checksummed installers, the desktop's own
-`desktop-updates` feed, required qualification before adoption, release-held
-publication state, and cleanup of unadopted releases. Windows-specific packaging
-and security behavior must be documented rather than copying macOS quarantine steps.
+Run daily 03:00 UTC and manual checks, comparison of that asset's SHA256 against the
+adopted digest in GitHub Releases, timestamped nightly versions, GitHub prereleases
+holding an immutable copy of the zip with its checksum, required qualification before
+adoption, release-held publication state, and cleanup of unadopted releases.
+
+The ThinkRail fork packages (`CommanderTvis.ThinkRail`, `CommanderTvis.ThinkRail.Desktop`)
+and the JetBrains stable packages are no longer published. Their last adopted catalog
+stays loadable until a SharpRail-only nightly replaces it. The fork desktop's
+`desktop-updates` release is left frozen: installed desktops receive no further updates.
 
 ## Done conditions
 
-A user can add the HTTPS source, discover both packages, install the native CLI
-on each supported architecture, install the desktop on x64, and upgrade to the next
-nightly. The desktop updater targets this distribution repository, not JetBrains
-or the Homebrew tap. Unchanged source commits do not rebuild. Failed builds and
-required qualification checks do not advance the published catalog or adopted
-release pointer.
+A user can add the HTTPS source, discover and install SharpRail on x64, and upgrade to
+the next nightly. An unchanged SharpRail zip does not republish. Failed downloads,
+checksum mismatches, and required qualification checks do not advance the published
+catalog or adopted release pointer.
 
-CLI WinGet installation and upgrade checks on native x64 and ARM64 runners remain
-hard publication gates. Desktop x64 qualification requires the upstream composite
-build/native installer smoke and WinGet metadata/search/show validation as hard
-gates. Both packages publish when these gates pass.
-
-Automated verification must not attempt desktop WinGet installation or upgrade or
-launch desktop setup through WinGet: unsigned setup triggers SmartScreen requiring user interaction.
-Do not bypass Windows security or simulate clicking “Run anyway”. Manual desktop
-WinGet installation/upgrade verification remains unverified and non-blocking; desktop
-build/native installer smoke and metadata checks do not establish that success.
+The x64 WinGet metadata/search/show validation against the candidate catalog is a hard
+publication gate. SharpRail WinGet installation is not automated and remains unverified.
+Do not bypass Windows security or simulate clicking “Run anyway”.
 
 Local checks cover protocol behavior, manifest generation, and strict typing.
-GitHub Windows runners perform actual CLI WinGet installation and upgrade checks,
-which cannot be claimed as locally verified on macOS.
+GitHub Windows runners perform the WinGet metadata gate, which cannot be claimed as
+locally verified on macOS.
 
 ## Operational scope
 
-The distribution is published from the public `CommanderTvis/winget-thinkrail`
-repository. GitHub Releases host binaries, immutable nightly catalogs and source SHAs,
-and the adopted-release pointer. Nightly publication never commits or pushes to Git.
-Vercel serves WinGet metadata and the installation page.
-Fork build adjustments remain confined to disposable CI checkouts, not sibling
-working repositories.
+The distribution is published from the public `CommanderTvis/winget`
+repository. GitHub Releases host the mirrored zips, immutable nightly catalogs and
+source digests, and the adopted-release pointer. Nightly publication never commits or
+pushes to Git. Vercel serves WinGet metadata and the installation page.

@@ -19,56 +19,34 @@ afterEach(async () => {
 async function fixture() {
   const artifacts = await mkdtemp(join(tmpdir(), "thinkrail-catalog-"));
   directories.push(artifacts);
-  for (const name of [
-    "thinkrail-windows-x64.exe",
-    "thinkrail-windows-arm64.exe",
-    "thinkrail-desktop-windows-x64.zip",
+  await writeFile(
+    join(artifacts, "sharprail-windows-x64.zip"),
     "sharprail-windows-x64.zip",
-  ]) {
-    await writeFile(join(artifacts, name), name);
-  }
+  );
   return {
     artifacts,
-    repository: "CommanderTvis/winget-thinkrail",
+    repository: "CommanderTvis/winget",
     version: "0.0.0-nightly.20260918170000",
-    desktopSetupPath: "ThinkRail-Setup-canary.exe",
   };
 }
 
-test("generates one native dual-architecture CLI and one x64-only desktop", async () => {
+test("generates the x64 SharpRail package from the mirrored zip", async () => {
   const options = await fixture();
   const catalog = await generateCatalog(options);
   expect(catalog.map((p) => p.PackageIdentifier)).toEqual([
-    "CommanderTvis.ThinkRail",
-    "CommanderTvis.ThinkRail.Desktop",
     "CommanderTvis.SharpRail",
   ]);
-  const cli = catalog[0]?.Versions[0];
-  const desktop = catalog[1]?.Versions[0];
-  expect(cli?.PackageVersion).toBe(options.version);
-  expect(cli?.Installers.map((i) => i.Architecture)).toEqual(["x64", "arm64"]);
-  expect(cli?.Installers[0]).toMatchObject({
-    InstallerType: "portable",
-    Commands: ["thinkrail"],
-    InstallerSha256: createHash("sha256")
-      .update("thinkrail-windows-x64.exe")
-      .digest("hex")
-      .toUpperCase(),
-    InstallerUrl: `https://github.com/${options.repository}/releases/download/v${options.version}/thinkrail-windows-x64.exe`,
-  });
-  expect(desktop?.Installers).toHaveLength(1);
-  expect(desktop?.Installers[0]).toMatchObject({
-    Architecture: "x64",
-    InstallerType: "zip",
-    NestedInstallerType: "exe",
-    NestedInstallerFiles: [{ RelativeFilePath: options.desktopSetupPath }],
-  });
-  expect(catalog[2]?.Versions[0]?.Installers).toMatchObject([
+  expect(catalog[0]?.Versions[0]?.PackageVersion).toBe(options.version);
+  expect(catalog[0]?.Versions[0]?.Installers).toMatchObject([
     {
       Architecture: "x64",
       InstallerType: "zip",
       NestedInstallerType: "portable",
       NestedInstallerFiles: [{ RelativeFilePath: "client\\SharpRail.UI.exe" }],
+      InstallerSha256: createHash("sha256")
+        .update("sharprail-windows-x64.zip")
+        .digest("hex")
+        .toUpperCase(),
       InstallerUrl: `https://github.com/${options.repository}/releases/download/v${options.version}/sharprail-windows-x64.zip`,
     },
   ]);
@@ -103,19 +81,13 @@ test("CLI output matches the catalog and repository formatting", async () => {
 
 test("refuses missing artifacts instead of advertising a partial nightly", async () => {
   const options = await fixture();
-  await rm(join(options.artifacts, "thinkrail-windows-arm64.exe"));
+  await rm(join(options.artifacts, "sharprail-windows-x64.zip"));
   await expect(generateCatalog(options)).rejects.toThrow();
 });
 
-test("rejects unsafe release identity and nested paths", async () => {
+test("rejects unsafe release identity", async () => {
   const options = await fixture();
-  for (const overrides of [
-    { version: "latest" },
-    { repository: "../evil" },
-    { desktopSetupPath: "../setup.exe" },
-    { desktopSetupPath: "C:\\setup.exe" },
-    { desktopSetupPath: "setup.exe\n--bad" },
-  ]) {
+  for (const overrides of [{ version: "latest" }, { repository: "../evil" }]) {
     await expect(
       generateCatalog({ ...options, ...overrides }),
     ).rejects.toThrow();
