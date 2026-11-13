@@ -44,7 +44,7 @@ test("generates one Tereditor package with x64 and ARM64 zips", async () => {
       Architecture,
       InstallerType: "zip",
       NestedInstallerType: "portable",
-      NestedInstallerFiles: [{ RelativeFilePath: "client\\SharpRail.UI.exe" }],
+      NestedInstallerFiles: [{ RelativeFilePath: "client\\tereditor.exe" }],
       InstallerSha256: createHash("sha256")
         .update(`tereditor-windows-${Architecture}.zip`)
         .digest("hex")

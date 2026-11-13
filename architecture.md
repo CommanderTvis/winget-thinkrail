@@ -31,7 +31,7 @@ not promise quota isolation across other Vercel projects.
 ```mermaid
 flowchart LR
   subgraph GitHub["GitHub"]
-    upstream["CommanderTvis/tereditor<br/>nightly release · SharpRail-nightly-win-x64/arm64.zip"]
+    upstream["CommanderTvis/tereditor<br/>nightly release · tereditor-nightly-win-x64/arm64.zip"]
     repo["CommanderTvis/winget<br/>code + workflows"]
     subgraph CI["GitHub Actions · daily 03:00 UTC / manual"]
       compare["Compare zip SHA256s with adopted marker"]
@@ -113,12 +113,12 @@ and nested ZIP installers.
 ## Tereditor package
 
 `CommanderTvis.Tereditor` has x64 and ARM64 installers in one package identity. The check
-job reads the SHA256 digests GitHub reports for `SharpRail-nightly-win-x64.zip` and
-`SharpRail-nightly-win-arm64.zip` in `CommanderTvis/tereditor`'s mutable `nightly`
+job reads the SHA256 digests GitHub reports for `tereditor-nightly-win-x64.zip` and
+`tereditor-nightly-win-arm64.zip` in `CommanderTvis/tereditor`'s mutable `nightly`
 release. The release job downloads both, refuses them unless their bytes match the
 checked digests, and copies them into the versioned prerelease as
 `tereditor-windows-<arch>.zip`, so the catalog's URLs and SHA256s stay immutable. Each is
-a nested portable zip (`client\SharpRail.UI.exe`) without a command alias. Nothing is
+a nested portable zip (`client\tereditor.exe`) without a command alias. Nothing is
 built here. The adopted-catalog validator requires a `CommanderTvis.Tereditor` package, or
 `CommanderTvis.SharpRail` in catalogs adopted before the rename.
 

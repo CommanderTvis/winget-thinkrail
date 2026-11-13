@@ -1,7 +1,7 @@
 # winget
 
 This repository distributes a WinGet source with one package, `CommanderTvis.Tereditor`,
-mirrored from the `SharpRail-nightly-win-x64.zip` and `SharpRail-nightly-win-arm64.zip`
+mirrored from the `tereditor-nightly-win-x64.zip` and `tereditor-nightly-win-arm64.zip`
 assets of `CommanderTvis/tereditor`'s `nightly` release. Nothing is built here. The ThinkRail fork and JetBrains packages are
 no longer published.
 

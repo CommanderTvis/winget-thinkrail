@@ -9,7 +9,7 @@ test("Source root serves an installation page while REST stays JSON", async () =
   expect(response.headers.get("Content-Type")).toBe("text/html; charset=utf-8");
   const html = await response.text();
   expect(html).toContain('<html lang="en">');
-  expect(html).toContain("winget source add --name thinkrail");
+  expect(html).toContain("winget source add --name commandertvis");
   expect(html).toContain("CommanderTvis.Tereditor");
   const info = await source.fetch(new Request("https://source/information"));
   expect(info.headers.get("Content-Type")).toContain("application/json");

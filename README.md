@@ -11,27 +11,27 @@ Install Windows builds through one WinGet source.
 Use a current version of WinGet (App Installer). Add the source once from an administrator terminal:
 
 ```powershell
-winget source add --name thinkrail --arg https://commandertvis-winget.vercel.app --type Microsoft.Rest
+winget source add --name commandertvis --arg https://commandertvis-winget.vercel.app --type Microsoft.Rest
 ```
 
-If you previously added this source with a different URL, remove it with
+If you previously added this source as `thinkrail`, remove it with
 `winget source remove --name thinkrail`, then add the source above. Installed
 packages remain installed.
 
 ## Tereditor (nightly)
 
-The [CommanderTvis Tereditor](https://github.com/CommanderTvis/tereditor) Avalonia prototype for Windows x64 and ARM64, mirrored from its `nightly` release and published when that build changes. WinGet selects your native architecture. No command alias is added; launch `client\SharpRail.UI.exe` from the install folder. Publication checks its WinGet metadata on a Windows x64 runner, but its WinGet portable-zip install is not tested there.
+The [CommanderTvis Tereditor](https://github.com/CommanderTvis/tereditor) Avalonia prototype for Windows x64 and ARM64, mirrored from its `nightly` release and published when that build changes. WinGet selects your native architecture. No command alias is added; launch `client\tereditor.exe` from the install folder. Publication checks its WinGet metadata on a Windows x64 runner, but its WinGet portable-zip install is not tested there.
 
 ```powershell
-winget install --id CommanderTvis.Tereditor --exact --source thinkrail --scope user
-winget upgrade --id CommanderTvis.Tereditor --exact --source thinkrail
-winget uninstall --id CommanderTvis.Tereditor --exact --source thinkrail
+winget install --id CommanderTvis.Tereditor --exact --source commandertvis --scope user
+winget upgrade --id CommanderTvis.Tereditor --exact --source commandertvis
+winget uninstall --id CommanderTvis.Tereditor --exact --source commandertvis
 ```
 
 ## Remove the source
 
 ```powershell
-winget source remove --name thinkrail
+winget source remove --name commandertvis
 ```
 
 Removing the source alone does not uninstall any package.

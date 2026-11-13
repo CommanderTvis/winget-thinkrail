@@ -30,9 +30,7 @@ export async function generateCatalog(
         Architecture,
         InstallerType: "zip",
         NestedInstallerType: "portable",
-        NestedInstallerFiles: [
-          { RelativeFilePath: "client\\SharpRail.UI.exe" },
-        ],
+        NestedInstallerFiles: [{ RelativeFilePath: "client\\tereditor.exe" }],
         Scope: "user",
         UpgradeBehavior: "install",
         MinimumOSVersion: "10.0.17763.0",

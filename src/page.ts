@@ -78,19 +78,19 @@ ${table}
     <section aria-labelledby="source-heading">
       <h2 id="source-heading">Add the source</h2>
       <p>Use a current version of WinGet (App Installer). Add the source once from an administrator terminal.</p>
-      <pre tabindex="0" aria-label="Add the WinGet source"><code>winget source add --name thinkrail --arg https://commandertvis-winget.vercel.app --type Microsoft.Rest</code></pre>
-      <p>If you previously added this source with a different URL, remove it with <code>winget source remove --name thinkrail</code>, then add the source above. Installed packages remain installed. Packages become installable once their verified build is available above.</p>
+      <pre tabindex="0" aria-label="Add the WinGet source"><code>winget source add --name commandertvis --arg https://commandertvis-winget.vercel.app --type Microsoft.Rest</code></pre>
+      <p>If you previously added this source as <code>thinkrail</code>, remove it with <code>winget source remove --name thinkrail</code>, then add the source above. Installed packages remain installed. Packages become installable once their verified build is available above.</p>
     </section>
     <section aria-labelledby="tereditor-heading">
       <h2 id="tereditor-heading">Tereditor (nightly)</h2>
-      <p>The <a href="https://github.com/CommanderTvis/tereditor">CommanderTvis Tereditor</a> Avalonia prototype for Windows x64 and ARM64, mirrored from its <code>nightly</code> release and published when that build changes. WinGet selects your native architecture. No command alias is added; launch <code>client\\SharpRail.UI.exe</code> from the install folder. Publication checks its WinGet metadata on a Windows x64 runner, but its WinGet portable-zip install is not tested there.</p>
-      <pre tabindex="0" aria-label="Tereditor commands"><code>winget install --id CommanderTvis.Tereditor --exact --source thinkrail --scope user
-winget upgrade --id CommanderTvis.Tereditor --exact --source thinkrail
-winget uninstall --id CommanderTvis.Tereditor --exact --source thinkrail</code></pre>
+      <p>The <a href="https://github.com/CommanderTvis/tereditor">CommanderTvis Tereditor</a> Avalonia prototype for Windows x64 and ARM64, mirrored from its <code>nightly</code> release and published when that build changes. WinGet selects your native architecture. No command alias is added; launch <code>client\\tereditor.exe</code> from the install folder. Publication checks its WinGet metadata on a Windows x64 runner, but its WinGet portable-zip install is not tested there.</p>
+      <pre tabindex="0" aria-label="Tereditor commands"><code>winget install --id CommanderTvis.Tereditor --exact --source commandertvis --scope user
+winget upgrade --id CommanderTvis.Tereditor --exact --source commandertvis
+winget uninstall --id CommanderTvis.Tereditor --exact --source commandertvis</code></pre>
     </section>
     <section aria-labelledby="remove-heading">
       <h2 id="remove-heading">Remove the source</h2>
-      <pre tabindex="0" aria-label="Remove the WinGet source"><code>winget source remove --name thinkrail</code></pre>
+      <pre tabindex="0" aria-label="Remove the WinGet source"><code>winget source remove --name commandertvis</code></pre>
       <p>Removing the source alone does not uninstall any package.</p>
     </section>
     <section aria-labelledby="notice-heading">

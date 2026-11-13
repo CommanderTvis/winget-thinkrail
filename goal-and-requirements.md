@@ -14,7 +14,7 @@ hosted on Vercel Hobby using its provided hostname, without a personal domain.
 ## Scope
 
 Publish one package, `CommanderTvis.Tereditor`, with x64 and ARM64 installers mirrored
-from the `SharpRail-nightly-win-x64.zip` and `SharpRail-nightly-win-arm64.zip` assets.
+from the `tereditor-nightly-win-x64.zip` and `tereditor-nightly-win-arm64.zip` assets.
 This repository builds nothing.
 
 Run daily 03:00 UTC and manual checks, comparison of those assets' SHA256 digests against

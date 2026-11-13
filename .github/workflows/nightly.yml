@@ -46,7 +46,7 @@ jobs:
           set -euo pipefail
           release=$(gh api "repos/$SOURCE_REPO/releases/tags/nightly")
           digest() {
-            jq -r --arg name "SharpRail-nightly-win-$1.zip" '.assets[] | select(.name == $name) | .digest | sub("^sha256:"; "")' <<< "$release"
+            jq -r --arg name "tereditor-nightly-win-$1.zip" '.assets[] | select(.name == $name) | .digest | sub("^sha256:"; "")' <<< "$release"
           }
           x64=$(digest x64)
           arm64=$(digest arm64)
@@ -91,8 +91,8 @@ jobs:
           mkdir -p artifacts
           for arch in x64 arm64; do
             gh release download nightly --repo "$SOURCE_REPO" \
-              --pattern "SharpRail-nightly-win-$arch.zip" --output "artifacts/tereditor-windows-$arch.zip"
-            unzip -l "artifacts/tereditor-windows-$arch.zip" | grep -Eq 'client[/\\]SharpRail\.UI\.exe$'
+              --pattern "tereditor-nightly-win-$arch.zip" --output "artifacts/tereditor-windows-$arch.zip"
+            unzip -l "artifacts/tereditor-windows-$arch.zip" | grep -Eq 'client[/\\]tereditor\.exe$'
           done
           printf '%s  %s\n' "$X64_SHA256" tereditor-windows-x64.zip "$ARM64_SHA256" tereditor-windows-arm64.zip > artifacts/SHA256SUMS
           (cd artifacts && sha256sum --check SHA256SUMS)
